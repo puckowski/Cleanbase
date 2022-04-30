@@ -1,0 +1,4 @@
+mysql -u root <<EOF
+SET PASSWORD FOR root@localhost = PASSWORD('password');
+FLUSH PRIVILEGES;
+EOF

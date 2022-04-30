@@ -1,0 +1,8 @@
+mysql_secure_installation <<EOF
+password
+n
+Y
+Y
+Y
+Y
+EOF
