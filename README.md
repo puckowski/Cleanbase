@@ -8,6 +8,7 @@ Not for any production use. Hacked together over a few weekends.
 
 Services must be Node.js services archived in a .zip archive no greater than 50 megabytes in size and which consumes no more than 128 megabytes of memory.
 There is 100 megabytes of storage, persistant across service builds, available under /virtualdisk, to each service.
+Services can write up to 200MB of temporary data.
 
 ## Requirements
 
