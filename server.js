@@ -534,6 +534,236 @@ async function addUser(req, postBody) {
 	return null;
 }
 
+async function updateUser(req, postBody) {
+	if (!postBody || !postBody.username || !postBody.userPassword || !postBody.newPassword || !postBody.password) {
+		return;
+	}
+
+	var url_parts = url.parse(req.url);
+	url_parts = url_parts.path;
+	url_parts = url_parts.split('/');
+	const serviceSegment = url_parts[2];
+
+	if (!serviceSegment || serviceSegment === '' || serviceSegment.length < 6 || serviceSegment.length > 32) {
+		return;
+	}
+
+	let conn;
+	try {
+		conn = await pool.getConnection();
+		console.log("got connection");
+
+		const rows = await conn.query("SELECT id, service_password from tbl_service where service_name = ?", [
+			serviceSegment
+		]);
+
+		let id, password;
+
+		if (rows.length > 0) {
+			id = rows[0].id;
+			password = rows[0].service_password;
+		}
+
+		console.log('pass check');
+
+		if (!id || id < 1 || !password) {
+			return;
+		}
+
+		// check user password with hashed password stored in the database
+		const validPassword = await bcrypt.compare(postBody.password, password);
+		if (validPassword) {
+			console.log('pass ok');
+		} else {
+			return;
+		}
+
+		const username = postBody.username;
+		const userPass = postBody.userPassword;
+
+		const usernameFormatted = username.replace(/[^a-z0-9]/gi, '');
+
+		const newPass = postBody.newPassword;
+		
+		if (usernameFormatted === username && username.length >= 6 && username.length <= 32 && userPass.length >= 6 && userPass.length <= 32) {
+			const existingRows = await conn.query("SELECT user_name, user_password, id from tbl_user where service_id = ? and user_name = ?", [
+				id, username
+			]);
+
+			if (existingRows.length === 1 && existingRows[0].user_password && existingRows[0].id && existingRows[0].id > 0) {
+				const validPassword = await bcrypt.compare(userPass, existingRows[0].user_password);
+				if (validPassword) {
+					console.log('username and pass ok...');
+
+					if (newPass.length >= 6 && newPass.length <= 32) {
+						// generate salt to hash password
+						const salt = await bcrypt.genSalt(10);
+						// now we set user password to hashed password
+						const hashedPass = await bcrypt.hash(newPass, salt);
+
+						const res = await conn.query("UPDATE tbl_user SET user_password = ? WHERE user_name = ? AND id = ?", [
+							hashedPass, existingRows[0].user_name, existingRows[0].id
+						]);
+					}
+				}
+			}
+		}
+	} catch (err) {
+		throw err;
+	} finally {
+		if (conn) conn.end();
+	}
+
+	return null;
+}
+
+async function resetUser(req, postBody) {
+	if (!postBody || !postBody.username || !postBody.newPassword || !postBody.password) {
+		return;
+	}
+
+	var url_parts = url.parse(req.url);
+	url_parts = url_parts.path;
+	url_parts = url_parts.split('/');
+	const serviceSegment = url_parts[2];
+
+	if (!serviceSegment || serviceSegment === '' || serviceSegment.length < 6 || serviceSegment.length > 32) {
+		return;
+	}
+
+	let conn;
+	try {
+		conn = await pool.getConnection();
+		console.log("got connection");
+
+		const rows = await conn.query("SELECT id, service_password from tbl_service where service_name = ?", [
+			serviceSegment
+		]);
+
+		let id, password;
+
+		if (rows.length > 0) {
+			id = rows[0].id;
+			password = rows[0].service_password;
+		}
+
+		console.log('pass check');
+
+		if (!id || id < 1 || !password) {
+			return;
+		}
+
+		// check user password with hashed password stored in the database
+		const validPassword = await bcrypt.compare(postBody.password, password);
+		if (validPassword) {
+			console.log('pass ok');
+		} else {
+			return;
+		}
+
+		const username = postBody.username;
+		const usernameFormatted = username.replace(/[^a-z0-9]/gi, '');
+
+		const newPass = postBody.newPassword;
+		
+		if (usernameFormatted === username && username.length >= 6 && username.length <= 32) {
+			const existingRows = await conn.query("SELECT user_name, id from tbl_user where service_id = ? and user_name = ?", [
+				id, username
+			]);
+
+			if (existingRows.length === 1 && existingRows[0].id && existingRows[0].id > 0) {
+				console.log('username and pass ok...');
+
+				if (newPass.length >= 6 && newPass.length <= 32) {
+					// generate salt to hash password
+					const salt = await bcrypt.genSalt(10);
+					// now we set user password to hashed password
+					const hashedPass = await bcrypt.hash(newPass, salt);
+
+					const res = await conn.query("UPDATE tbl_user SET user_password = ? WHERE user_name = ? AND id = ?", [
+						hashedPass, existingRows[0].user_name, existingRows[0].id
+					]);
+				}
+			}
+		}
+	} catch (err) {
+		throw err;
+	} finally {
+		if (conn) conn.end();
+	}
+
+	return null;
+}
+
+async function removeUser(req, postBody) {
+	if (!postBody || !postBody.password || !postBody.username) {
+		return;
+	}
+
+	var url_parts = url.parse(req.url);
+	url_parts = url_parts.path;
+	url_parts = url_parts.split('/');
+	const serviceSegment = url_parts[2];
+
+	if (!serviceSegment || serviceSegment === '' || serviceSegment.length < 6 || serviceSegment.length > 32) {
+		return;
+	}
+
+	let conn;
+	try {
+		conn = await pool.getConnection();
+		console.log("got connection");
+
+		const rows = await conn.query("SELECT id, service_password from tbl_service where service_name = ?", [
+			serviceSegment
+		]);
+
+		let id, password;
+
+		if (rows.length > 0) {
+			id = rows[0].id;
+			password = rows[0].service_password;
+		}
+
+		console.log('pass check');
+
+		if (!id || id < 1 || !password) {
+			return;
+		}
+
+		// check user password with hashed password stored in the database
+		const validPassword = await bcrypt.compare(postBody.password, password);
+		if (validPassword) {
+			console.log('pass ok');
+		} else {
+			return;
+		}
+
+		const username = postBody.username;
+		const usernameFormatted = username.replace(/[^a-z0-9]/gi, '');
+
+		if (usernameFormatted === username && username.length >= 6 && username.length <= 32) {
+			const existingRows = await conn.query("SELECT id, user_name from tbl_user where service_id = ? and user_name = ?", [
+				id, username
+			]);
+
+			if (existingRows.length == 1) {
+				console.log('username and pass ok...');
+
+				const res = await conn.query("DELETE FROM tbl_user WHERE id = ? AND user_name = ?", [
+					existingRows[0].id, existingRows[0].user_name
+				]);
+			}
+		}
+	} catch (err) {
+		throw err;
+	} finally {
+		if (conn) conn.end();
+	}
+
+	return null;
+}
+
 async function addSuperuser(req, postBody) {
 	if (!postBody || !postBody.password || !postBody.username) {
 		return;
@@ -1284,6 +1514,48 @@ https.createServer(serverOptions, async function (req, res) {
 			const bodyJson = JSON.parse(body);
 
 			await addUser(req, bodyJson);
+
+			res.writeHead(200, { 'Content-Type': 'text/plain' });
+			res.end('Hello, World!\n');
+		});
+	} else if (req.method === 'POST' && firstSegment === 'removeuser') {
+		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
+		let body = '';
+		req.on('data', chunk => {
+			body += chunk.toString(); // convert Buffer to string
+		});
+		req.on('end', async () => {
+			const bodyJson = JSON.parse(body);
+
+			await removeUser(req, bodyJson);
+
+			res.writeHead(200, { 'Content-Type': 'text/plain' });
+			res.end('Hello, World!\n');
+		});
+	} else if (req.method === 'POST' && firstSegment === 'updateuser') {
+		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
+		let body = '';
+		req.on('data', chunk => {
+			body += chunk.toString(); // convert Buffer to string
+		});
+		req.on('end', async () => {
+			const bodyJson = JSON.parse(body);
+
+			await updateUser(req, bodyJson);
+
+			res.writeHead(200, { 'Content-Type': 'text/plain' });
+			res.end('Hello, World!\n');
+		});
+	} else if (req.method === 'POST' && firstSegment === 'resetuser') {
+		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
+		let body = '';
+		req.on('data', chunk => {
+			body += chunk.toString(); // convert Buffer to string
+		});
+		req.on('end', async () => {
+			const bodyJson = JSON.parse(body);
+
+			await resetUser(req, bodyJson);
 
 			res.writeHead(200, { 'Content-Type': 'text/plain' });
 			res.end('Hello, World!\n');

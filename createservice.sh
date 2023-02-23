@@ -8,6 +8,8 @@ cd /tmp
 echo "Password changed"
 EOF
 
+sudo setquota -u $1 200M 220M 0 0 /
+
 mkdir -p /usr/disk-images
 cd /usr/disk-images
 

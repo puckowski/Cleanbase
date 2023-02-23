@@ -7,7 +7,14 @@ Not for any production use. Hacked together over a few weekends.
 ## Limitations
 
 Services must be Node.js services archived in a .zip archive no greater than 50 megabytes in size and which consumes no more than 128 megabytes of memory.
-There is 100 megabytres of storage, persistant across service builds, available under /virtualdisk, to each service.
+There is 100 megabytes of storage, persistant across service builds, available under /virtualdisk, to each service.
+
+## Requirements
+
+At a minimum, have: 
+- Disk space: 40 GB
+- Memory: 20 GB
+- Compute: 2 vCPU
 
 ## Installation
 
@@ -159,3 +166,38 @@ POST body:
 	"username": "abcdefg",
 	"userPassword": "123456"
 }
+
+https://172.17.0.1:443/removeuser/{SERVICE_NAME}
+POST body:
+{
+	"password": "123456",
+	"username": "abcdefg"
+}
+Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters.
+
+https://172.17.0.1:443/updateuser/{SERVICE_NAME}
+POST body:
+{
+	"password": "123456",
+	"username": "abcdefg",
+	"userPassword": "123456",
+	"newPassword": "789012"
+}
+Updates user password. Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Passwords must be at least 6 characters and less than 33 characters.
+
+https://172.17.0.1:443/resetuser/{SERVICE_NAME}
+POST body:
+{
+	"password": "123456",
+	"username": "abcdefg",
+	"newPassword": "789012"
+}
+Updates user password forcibly. Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Password must be at least 6 characters and less than 33 characters.
+
+
+## Version 1.1
+
+- Add https://172.17.0.1:443/removeuser/{SERVICE_NAME}
+- Add https://172.17.0.1:443/updateuser/{SERVICE_NAME}
+- Add https://172.17.0.1:443/resetuser/{SERVICE_NAME}
+- Add filesystem quotas per user.
