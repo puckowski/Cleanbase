@@ -23,6 +23,10 @@ sudo apt install -y virtualbox-guest-dkms virtualbox-guest-x11
 sudo apt-get install -y cron curl
 
 sudo apt update
+
+# sudo sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="rootflags=pquota"/' /etc/fstab
+# sudo update-grub
+
 sudo apt install -y quota
 quota --version
 sudo sed -i 's/defaults/usrquota,grpquota/' /etc/fstab
@@ -53,5 +57,4 @@ sudo apt-get update
 sudo apt-get install insomnia
 sudo ./initcron.sh
     
-echo "Finish setup"
-
+echo "Finish setup... reboot when ready"

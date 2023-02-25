@@ -292,6 +292,8 @@ async function createEndpoint(req, res) {
 			maxPort = 2999;
 		}
 
+		console.log('max port: ' + maxPort);
+		
 		if (rows.length === 0 || maxPort < 3125) {
 			var url_parts = url.parse(req.url);
 			url_parts = url_parts.path;
@@ -304,6 +306,11 @@ async function createEndpoint(req, res) {
 			const serviceRows = await conn.query("SELECT id from tbl_service WHERE service_name = ?", [
 				serviceSegment
 			]);
+			
+			console.log(serviceRows.length + ' service rows');
+			console.log(endpointSegment);
+			console.log(endpointFormatted);
+			console.log(endpointSegment.length + ' ' + endpointFormatted.length);
 
 			if (serviceRows.length > 0 && endpointSegment.length === endpointFormatted.length) {
 				const serviceId = serviceRows[0].id;
@@ -311,6 +318,8 @@ async function createEndpoint(req, res) {
 				const endpointRows = await conn.query("SELECT service_endpoint from tbl_endpoint WHERE service_id = ? AND service_endpoint = ?", [
 					serviceId, endpointSegment
 				]);
+				
+				console.log('endpoint rows: ' + endpointRows.length);
 
 				if (endpointRows.length === 0) {
 					maxPort++;
@@ -1322,16 +1331,19 @@ https.createServer(serverOptions, async function (req, res) {
 		req.on('data', chunk => {
 			body += chunk.toString(); // convert Buffer to string
 		});
+		console.log('loading service data...');
 		req.on('end', () => {
 			res.end('ok');
 
 			const bodyJson = JSON.parse(body);
 
 			if (bodyJson && bodyJson.name && bodyJson.password && bodyJson.name.length >= 6 && bodyJson.password.length >= 6) {
+				console.log('formatting service name...');
 				const nameOriginal = bodyJson.name;
 				const nameFormatted = nameOriginal.replace(/[^a-z0-9]/gi, '');
 
 				if (nameOriginal.length === nameFormatted.length && nameFormatted.length <= 32 && bodyJson.password.length <= 32) {
+					console.log('creating service...');
 					createService(bodyJson.name, bodyJson.password, payload.user_id);
 				}
 			}

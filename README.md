@@ -16,6 +16,7 @@ At a minimum, have:
 - Disk space: 40 GB
 - Memory: 20 GB
 - Compute: 2 vCPU
+- Filesystem is formatted as xfs or a second xfs disk is added following the steps in setupcleanbase_manual.md
 
 ## Installation
 
@@ -79,7 +80,7 @@ POST body:
 	"password": "123456"
 }
 Requires Authorization Bearer header (superuser JWT).
-Service name must be alphanumeric and have a maximum of 32 characters. Password must be at least 6 characters and less than 33 characters.
+Service name must be alphanumeric and have a maximum of 32 characters. Service name must be at least 6 characters. Password must be at least 6 characters and less than 33 characters.
 
 https://localhost/createendpoint/{SERVICE_NAME}/{ENDPOINT_NAME}
 Multipart form with one part where the name is the service password and the value is a 50 megabyte .zip archive of your Node.js service.
