@@ -266,28 +266,12 @@ async function createEndpoint(req, res) {
 		conn = await pool.getConnection();
 		console.log("got connection");
 
-		const rows = await conn.query("SELECT service_port from tbl_endpoint ORDER BY service_port ASC");
+		const rows = await conn.query("SELECT service_port from tbl_endpoint ORDER BY service_port DESC");
 
 		let maxPort;
 
 		if (rows.length > 0) {
-			let expected = 3000;
-
-			for (let i = 0; i < rows.length; ++i) {
-				maxPort = rows[i].maxPort;
-
-				if (!maxPort) {
-					maxPort = expected - 1;
-
-					break;
-				} else if (maxPort !== expected) {
-					maxPort = expected - 1;
-
-					break;
-				}
-
-				expected++;
-			}
+			maxPort = rows[0].service_port;
 		} else {
 			maxPort = 2999;
 		}

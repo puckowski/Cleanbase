@@ -1,4 +1,2 @@
-abcdef_bar_build.zip
-foo_bar_build.zip
-test123_bar_build.zip
-test123_baz_build.zip
+roottest_one7_build.zip
+roottest_one8_build.zip

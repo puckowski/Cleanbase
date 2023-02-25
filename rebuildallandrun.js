@@ -110,7 +110,7 @@ async function runStoppedContainers() {
 
 						if (!runningSet.has(toRun)) {
 							console.log('run : ' + toRun + ' ' + portRow.service_name + portRow.service_endpoint + ':1.0');
-
+				
 							cp.exec('./restartstopped.sh ' + portRow.service_name + portRow.service_endpoint + ':1.0 ' + toRun
 								+ ' ' + portRow.service_name, (error, stdout, stderr) => {
 									// catch err, stdout, stderr
@@ -161,7 +161,7 @@ async function rebuildAllAndRun() {
 
 	console.log('rebuild all and run...');
 
-	cp.exec('./listbuilds.sh', (error, stdout, stderr) => {
+	cp.exec('./listbuilds.sh', async (error, stdout, stderr) => {
 		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
@@ -209,11 +209,12 @@ async function rebuildAllAndRun() {
 						// return;
 					}
 					console.log('Result of shell script execution', stdout);
-
+					console.log('endpoint script finished...');
+					
 					let conn;
 					try {
 						conn = await pool.getConnection();
-						console.log("got connection");
+						console.log("got connection for port stop query");
 
 						const rows = await conn.query("SELECT service_port from tbl_service LEFT JOIN tbl_endpoint ON service_id = tbl_service.id where service_name = ? and service_endpoint = ?", [
 							serviceSegment, endpointSegment
@@ -232,7 +233,6 @@ async function rebuildAllAndRun() {
 						console.log('try to stop port: ' + port);
 
 						await stopContainer(port);
-						await runStoppedContainers();
 					} catch (err) {
 						throw err;
 					} finally {
@@ -240,6 +240,8 @@ async function rebuildAllAndRun() {
 					}
 				});
 		});
+		
+		await runStoppedContainers();
 
 		return;
 	});

@@ -24,8 +24,8 @@ sudo apt-get install -y cron curl
 
 sudo apt update
 
-# sudo sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="rootflags=pquota"/' /etc/fstab
-# sudo update-grub
+sudo sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="rootflags=pquota"/' /etc/fstab
+sudo update-grub
 
 sudo apt install -y quota
 quota --version
@@ -55,6 +55,8 @@ sudo echo "deb [trusted=yes arch=amd64] https://download.konghq.com/insomnia-ubu
     | sudo tee -a /etc/apt/sources.list.d/insomnia.list
 sudo apt-get update
 sudo apt-get install insomnia
+
 sudo ./initcron.sh
+sudo cp changepass.sh /
     
 echo "Finish setup... reboot when ready"

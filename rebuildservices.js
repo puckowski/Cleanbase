@@ -38,6 +38,7 @@ async function rebuildServices() {
 		console.log('Result of shell script execution', stdout);
 
 		const runningSet = new Set();
+		const serviceNameSet = new Set();
 
 		const allFileContents = fs.readFileSync('readyservices.txt', 'utf-8');
 		allFileContents.split(/\r?\n/).forEach(line => {
@@ -66,8 +67,9 @@ async function rebuildServices() {
 				portsToRun.forEach(portRow => {
 					const toRun = portRow.service_name;
 
-					if (!runningSet.has(toRun)) {
+					if (!runningSet.has(toRun) && !serviceNameSet.has(portRow.service_name)) {
 						console.log('run : ' + './rebuildservices.sh ' + portRow.service_name);
+						serviceNameSet.add(portRow.service_name);
 
 						cp.execSync('./rebuildservices.sh ' + portRow.service_name, (error, stdout, stderr) => {
 							// catch err, stdout, stderr
@@ -83,6 +85,8 @@ async function rebuildServices() {
 							}
 							console.log('Result of shell script execution', stdout);
 						});
+					} else {
+						console.log('skip : ' + './rebuildservices.sh ' + portRow.service_name);
 					}
 				});
 

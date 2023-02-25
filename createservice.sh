@@ -3,7 +3,7 @@ passwd -d $1
 
 sudo -i -u $1 bash << EOF
 echo "Changing password"
-cd /tmp
+cd /
 ./changepass.sh $1 $2
 echo "Password changed"
 EOF
