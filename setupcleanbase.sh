@@ -21,6 +21,8 @@ sudo ./maria-init/mariadb-init-3.txt
 sudo apt install -y virtualbox-guest-dkms virtualbox-guest-x11
 
 sudo apt-get install -y cron curl
+sudo systemctl start cron
+sudo systemctl enable cron
 
 sudo apt update
 
