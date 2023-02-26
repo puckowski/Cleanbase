@@ -8,7 +8,7 @@ Not for any production use. Hacked together over a few weekends.
 
 Services must be Node.js services archived in a .zip archive no greater than 50 megabytes in size and which consumes no more than 128 megabytes of memory.
 There is 100 megabytes of storage, persistant across service builds, available under /virtualdisk, to each service.
-Services can write up to 50MB of temporary data.
+Services can write up to 50MB of temporary data. Services are based on Alpine Linux.
 
 ## Requirements
 
@@ -36,7 +36,7 @@ sudo node server.js
 
 ## On host reboot
 
-In a terminal, run the following command:
+Reboot cron job should automatically restart services. If reboot cron job fails, in a terminal, run the following command:
 
 ```
 ./rebuildall.sh
@@ -84,7 +84,7 @@ Service name must be alphanumeric and have a maximum of 32 characters. Service n
 
 https://localhost/createendpoint/{SERVICE_NAME}/{ENDPOINT_NAME}
 Multipart form with one part where the name is the service password and the value is a 50 megabyte .zip archive of your Node.js service.
-Requires Authorization Bearer header (superuser JWT).
+Requires Authorization Bearer header (superuser JWT). Zip archive must contain a server.js file which sets up the service on port 80.
 
 https://localhost/updateendpoint/{SERVICE_NAME}/{ENDPOINT_NAME}
 Multipart form with one part where the name is the service password and the value is a 50 megabyte .zip archive of your Node.js service.
