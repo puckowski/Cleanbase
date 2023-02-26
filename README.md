@@ -85,6 +85,7 @@ Service name must be alphanumeric and have a maximum of 32 characters. Service n
 https://localhost/createendpoint/{SERVICE_NAME}/{ENDPOINT_NAME}
 Multipart form with one part where the name is the service password and the value is a 50 megabyte .zip archive of your Node.js service.
 Requires Authorization Bearer header (superuser JWT). Zip archive must contain a server.js file which sets up the service on port 80.
+An example zip archive can be located in the root of the project, named build.zip.
 
 https://localhost/updateendpoint/{SERVICE_NAME}/{ENDPOINT_NAME}
 Multipart form with one part where the name is the service password and the value is a 50 megabyte .zip archive of your Node.js service.
