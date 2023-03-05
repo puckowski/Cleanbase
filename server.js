@@ -7,6 +7,7 @@ const path = require('path');
 const jwt = require("jsonwebtoken");
 const httpProxy = require('http-proxy');
 const bcrypt = require("bcrypt");
+const { Worker } = require("worker_threads");
 
 const proxy = httpProxy.createProxy({ secure: false });
 
@@ -134,7 +135,24 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 
 		// iterate through each file path and extract them
 		filesInfo.forEach(({ filePath, fileName }) => {
-			const zipName = filePath.substring(filePath.lastIndexOf('/') + 1);
+			const worker = new Worker(
+				__dirname + "/endpoint_worker.js",
+				{
+					workerData: {
+						filePath,
+						fileName
+					}
+				}
+			);
+			worker.on("message", msg => {
+				if (msg.endpointSegment !== null && msg.endpointSegment !== undefined) {
+					const endpointSegment = msg.endpointSegment;
+					const ready = msg.ready;
+					endpointReadyMap.set(endpointSegment, ready);
+					console.log('main thread: ' + endpointSegment + ': ' + ready);
+				}
+			});
+			/*const zipName = filePath.substring(filePath.lastIndexOf('/') + 1);
 			const tokens = zipName.split('_');
 			const serviceSegment = tokens[0];
 			const endpointSegment = tokens[1];
@@ -184,7 +202,7 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 					} finally {
 						if (conn) conn.end();
 					}
-				});
+				});*/
 		});
 	});
 
@@ -277,7 +295,7 @@ async function createEndpoint(req, res) {
 		}
 
 		console.log('max port: ' + maxPort);
-		
+
 		if (rows.length === 0 || maxPort < 3125) {
 			var url_parts = url.parse(req.url);
 			url_parts = url_parts.path;
@@ -290,7 +308,7 @@ async function createEndpoint(req, res) {
 			const serviceRows = await conn.query("SELECT id from tbl_service WHERE service_name = ?", [
 				serviceSegment
 			]);
-			
+
 			console.log(serviceRows.length + ' service rows');
 			console.log(endpointSegment);
 			console.log(endpointFormatted);
@@ -302,7 +320,7 @@ async function createEndpoint(req, res) {
 				const endpointRows = await conn.query("SELECT service_endpoint from tbl_endpoint WHERE service_id = ? AND service_endpoint = ?", [
 					serviceId, endpointSegment
 				]);
-				
+
 				console.log('endpoint rows: ' + endpointRows.length);
 
 				if (endpointRows.length === 0) {
@@ -577,7 +595,7 @@ async function updateUser(req, postBody) {
 		const usernameFormatted = username.replace(/[^a-z0-9]/gi, '');
 
 		const newPass = postBody.newPassword;
-		
+
 		if (usernameFormatted === username && username.length >= 6 && username.length <= 32 && userPass.length >= 6 && userPass.length <= 32) {
 			const existingRows = await conn.query("SELECT user_name, user_password, id from tbl_user where service_id = ? and user_name = ?", [
 				id, username
@@ -658,7 +676,7 @@ async function resetUser(req, postBody) {
 		const usernameFormatted = username.replace(/[^a-z0-9]/gi, '');
 
 		const newPass = postBody.newPassword;
-		
+
 		if (usernameFormatted === username && username.length >= 6 && username.length <= 32) {
 			const existingRows = await conn.query("SELECT user_name, id from tbl_user where service_id = ? and user_name = ?", [
 				id, username
