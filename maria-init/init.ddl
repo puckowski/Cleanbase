@@ -14,6 +14,7 @@ create table tbl_user (
    id INT NOT NULL AUTO_INCREMENT,
    user_name VARCHAR(500) NOT NULL,
    user_password VARCHAR(128) NOT NULL,
+   user_level INT NOT NULL DEFAULT 1,
    service_id INT NOT NULL,
    PRIMARY KEY ( id )
 );

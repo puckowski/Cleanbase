@@ -465,6 +465,26 @@ async function addUser(req, postBody) {
 		const username = postBody.username;
 		const userPass = postBody.userPassword;
 
+		let userLevel = postBody.userLevel;
+
+		console.log('user level: ' + userLevel);
+
+		if (userLevel === null || userLevel === undefined || typeof userLevel !== 'number' || userLevel < 1 || userLevel > 10) {
+			if (userLevel === null || userLevel === undefined) {
+				console.log('not defined');
+				userLevel = 1;
+			} else if (typeof userLevel === 'number' && userLevel > 10) {
+				console.log('exceeds max');
+				userLevel = 10;
+			} else if (typeof userLevel === 'number' && userLevel < 1) {
+				console.log('minimum not met');
+				userLevel = 1;
+			} else if (typeof userLevel !== 'number') {
+				console.log(typeof userLevel + ' not number');
+				userLevel = 1;
+			}
+		}
+
 		const usernameFormatted = username.replace(/[^a-z0-9]/gi, '');
 
 		if (usernameFormatted === username && username.length >= 6 && username.length <= 32 && userPass.length >= 6 && userPass.length <= 32) {
@@ -480,8 +500,8 @@ async function addUser(req, postBody) {
 				// now we set user password to hashed password
 				const hashedPass = await bcrypt.hash(userPass, salt);
 
-				const res = await conn.query("INSERT INTO tbl_user (user_name, user_password, service_id) VALUES (?, ?, ?)", [
-					username, hashedPass, id
+				const res = await conn.query("INSERT INTO tbl_user (user_name, user_password, service_id, user_level) VALUES (?, ?, ?, ?)", [
+					username, hashedPass, id, userLevel
 				]);
 			}
 		}
@@ -855,7 +875,7 @@ async function loginUser(req, postBody) {
 		const usernameFormatted = username.replace(/[^a-z0-9]/gi, '');
 
 		if (usernameFormatted === username && username.length >= 6 && username.length <= 32 && userPass.length >= 6 && userPass.length <= 32) {
-			const existingRows = await conn.query("SELECT user_name, user_password, id from tbl_user where service_id = ? and user_name = ?", [
+			const existingRows = await conn.query("SELECT user_name, user_password, id, user_level from tbl_user where service_id = ? and user_name = ?", [
 				id, username
 			]);
 
@@ -864,7 +884,7 @@ async function loginUser(req, postBody) {
 				if (validPassword) {
 					console.log('username and pass ok...');
 
-					const newToken = jwt.sign({ username, user_id: existingRows[0].id, service_id: id }, jwtKey, {
+					const newToken = jwt.sign({ username, user_id: existingRows[0].id, service_id: id, user_level: existingRows[0].user_level }, jwtKey, {
 						algorithm: "HS256",
 						expiresIn: jwtExpirySeconds,
 					});

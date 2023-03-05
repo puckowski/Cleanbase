@@ -158,9 +158,10 @@ POST body:
 {
 	"password": "123456",
 	"username": "abcdefg",
-	"userPassword": "123456"
+	"userPassword": "123456",
+	"userLevel": 5
 }
-Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Password must be at least 6 characters and less than 33 characters.
+Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Password must be at least 6 characters and less than 33 characters. User level must be at least 1 and no more than 10.
 
 https://172.17.0.1:443/loginuser/{SERVICE_NAME}
 POST body:
@@ -169,6 +170,13 @@ POST body:
 	"username": "abcdefg",
 	"userPassword": "123456"
 }
+Returns JWT with payload containing:
+```
+"username": <>,
+"user_id": <>,
+"service_id": <>,
+"user_level": <>
+```
 
 https://172.17.0.1:443/removeuser/{SERVICE_NAME}
 POST body:
