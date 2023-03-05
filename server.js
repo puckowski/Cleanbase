@@ -152,57 +152,6 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 					console.log('main thread: ' + endpointSegment + ': ' + ready);
 				}
 			});
-			/*const zipName = filePath.substring(filePath.lastIndexOf('/') + 1);
-			const tokens = zipName.split('_');
-			const serviceSegment = tokens[0];
-			const endpointSegment = tokens[1];
-
-			console.log('./endpoint.sh ' + (serviceSegment + '_' + endpointSegment + '_build.zip') + ' ' + (serviceSegment + endpointSegment));
-			cp.exec('./endpoint.sh ' + (serviceSegment + '_' + endpointSegment + '_build.zip') + ' ' + (serviceSegment + endpointSegment),
-				async (error, stdout, stderr) => {
-					// catch err, stdout, stderr
-					if (error) {
-						console.log('Error in removing files');
-						console.log(error);
-						return;
-					}
-					if (stderr) {
-						console.log('has stderr output');
-						console.log(stderr);
-						// return;
-					}
-					console.log('Result of shell script execution', stdout);
-
-					let conn;
-					try {
-						conn = await pool.getConnection();
-						console.log("got connection");
-
-						const rows = await conn.query("SELECT service_port from tbl_service LEFT JOIN tbl_endpoint ON service_id = tbl_service.id where service_name = ? and service_endpoint = ?", [
-							serviceSegment, endpointSegment
-						]);
-
-						let port;
-
-						if (rows.length > 0) {
-							port = rows[0].service_port;
-						}
-
-						if (!port || port < 3000) {
-							return;
-						}
-
-						endpointReadyMap.set(endpointSegment, false);
-
-						console.log('try to stop port: ' + port);
-						await stopContainer(port);
-						await runStoppedContainers();
-					} catch (err) {
-						throw err;
-					} finally {
-						if (conn) conn.end();
-					}
-				});*/
 		});
 	});
 
