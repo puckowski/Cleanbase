@@ -408,11 +408,6 @@ async function restartEndpoint(req, res, postBody) {
 
 					console.log('found endpoint with port: ' + port);
 
-					/*
-					await stopContainer(port);
-					await runStoppedContainers();
-					*/
-
 					const worker = new Worker(
 						__dirname + "/restart_endpoint_worker.js",
 						{
