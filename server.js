@@ -338,6 +338,7 @@ async function removeEndpoint(req, res, postBody) {
 						endpointSegment, serviceId
 					]);
 
+					/*
 					console.log('remove file: ' + buildPath);
 
 					try {
@@ -346,11 +347,33 @@ async function removeEndpoint(req, res, postBody) {
 					} catch (err) {
 						// console.error(err)
 					}
+					*
+					*/
 
+					/*
 					endpointReadyMap.remove(endpointSegment);
 
 					console.log('stopping port: ' + port);
 					await stopContainer(port);
+					*/
+
+					endpointReadyMap.set(endpointSegment, false);
+
+					const worker = new Worker(
+						__dirname + "/remove_endpoint_worker.js",
+						{
+							workerData: {
+								endpointSegment,
+								port,
+								buildPath
+							}
+						}
+					);
+					worker.on("message", msg => {
+						if (msg.endpointSegment !== null && msg.endpointSegment !== undefined) {
+							endpointReadyMap.delete(msg.endpointSegment);
+						}
+					});
 				}
 			}
 		}
