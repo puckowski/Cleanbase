@@ -20,6 +20,9 @@ At a minimum, have:
 
 ## Installation
 
+In maria-init/mariadb-init-2.txt replace ```password``` with your desired database password.
+Replace ```password``` with your specified database password in server.js and the worker scripts ending in ```_worker.js```.
+
 On an Ubuntu 20.04 host, in a terminal, run the following command:
 
 ```
@@ -204,7 +207,6 @@ POST body:
 	"newPassword": "789012"
 }
 Updates user password forcibly. Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Password must be at least 6 characters and less than 33 characters.
-
 
 ## Version 1.1
 

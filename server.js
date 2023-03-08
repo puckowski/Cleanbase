@@ -408,8 +408,27 @@ async function restartEndpoint(req, res, postBody) {
 
 					console.log('found endpoint with port: ' + port);
 
+					/*
 					await stopContainer(port);
 					await runStoppedContainers();
+					*/
+
+					const worker = new Worker(
+						__dirname + "/restart_endpoint_worker.js",
+						{
+							workerData: {
+								port
+							}
+						}
+					);
+					worker.on("message", msg => {
+						if (msg.endpointSegment !== null && msg.endpointSegment !== undefined) {
+							const endpointSegment = msg.endpointSegment;
+							const ready = msg.ready;
+							endpointReadyMap.set(endpointSegment, ready);
+							console.log('main thread: ' + endpointSegment + ': ' + ready);
+						}
+					});
 				}
 			}
 		}
