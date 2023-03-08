@@ -338,25 +338,6 @@ async function removeEndpoint(req, res, postBody) {
 						endpointSegment, serviceId
 					]);
 
-					/*
-					console.log('remove file: ' + buildPath);
-
-					try {
-						fs.unlinkSync(buildPath)
-						// file removed
-					} catch (err) {
-						// console.error(err)
-					}
-					*
-					*/
-
-					/*
-					endpointReadyMap.remove(endpointSegment);
-
-					console.log('stopping port: ' + port);
-					await stopContainer(port);
-					*/
-
 					endpointReadyMap.set(endpointSegment, false);
 
 					const worker = new Worker(
