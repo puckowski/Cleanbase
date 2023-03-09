@@ -210,6 +210,15 @@ POST body:
 }
 Updates user password forcibly. Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Password must be at least 6 characters and less than 33 characters.
 
+## Version 1.2
+
+- Create constants file for database credentials.
+- Limit endpoints to 1000 milliseconds synchronous execution.
+- Add worker for endpoint restart.
+- Add worker for remove endpoint and fix bug with remove endpoint.
+- Add user level for users as a basic authorization system and update initial DDLs.
+- Add worker for new endpoints.
+
 ## Version 1.1
 
 - Add https://172.17.0.1:443/removeuser/{SERVICE_NAME}
