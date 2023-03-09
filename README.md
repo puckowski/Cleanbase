@@ -9,6 +9,7 @@ Not for any production use. Hacked together over a few weekends.
 Services must be Node.js services archived in a .zip archive no greater than 50 megabytes in size and which consumes no more than 128 megabytes of memory.
 There is 100 megabytes of storage, persistant across service builds, available under /virtualdisk, to each service.
 Services can write up to 50MB of temporary data. Services are based on Alpine Linux.
+Endpoints must respond within 1000 milliseconds. This is to prevent one service from utilizing too many resources.
 
 ## Requirements
 
@@ -21,7 +22,15 @@ At a minimum, have:
 ## Installation
 
 In maria-init/mariadb-init-2.txt replace ```password``` with your desired database password.
-Replace ```password``` with your specified database password in server.js and the worker scripts ending in ```_worker.js```.
+Replace ```password``` with your specified database password in:
+- server.js
+- activesuperuser.js
+- endpoint_worker.js
+- mariadb-init-3.txt
+- rebuildallandrun.js
+- rebuildservices.js
+- restart_endpoint_worker.js
+- standalonerunstopped.js
 
 On an Ubuntu 20.04 host, in a terminal, run the following command:
 

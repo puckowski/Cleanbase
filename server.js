@@ -9,7 +9,12 @@ const httpProxy = require('http-proxy');
 const bcrypt = require("bcrypt");
 const { Worker } = require("worker_threads");
 
-const proxy = httpProxy.createProxy({ secure: false });
+const proxy = httpProxy.createProxy({ secure: false, proxyTimeout: 1000 });
+
+proxy.on('error', (err, req, res) => {
+	res.writeHead(405, { 'Content-Type': 'text/plain' });
+	res.end('Timeout\n');
+});
 
 const jwtKey = "1234567890";
 
