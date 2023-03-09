@@ -21,16 +21,9 @@ At a minimum, have:
 
 ## Installation
 
-In maria-init/mariadb-init-2.txt replace ```password``` with your desired database password.
-Replace ```password``` with your specified database password in:
-- server.js
-- activesuperuser.js
-- endpoint_worker.js
-- mariadb-init-3.txt
-- rebuildallandrun.js
-- rebuildservices.js
-- restart_endpoint_worker.js
-- standalonerunstopped.js
+In maria-init/mariadb-init-2.txt and maria-init/mariadb-init-3.txt replace ```password``` with your desired database password.
+Replace ```DATABASE_PASSWORD``` with your specified database password in:
+- constants.js
 
 On an Ubuntu 20.04 host, in a terminal, run the following command:
 

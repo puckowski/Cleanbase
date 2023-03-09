@@ -24,10 +24,11 @@ const serviceReadyMap = new Map();
 //var neededstats = [];
 
 const mariadb = require('mariadb');
+const { DATABASE_PASSWORD } = require('./constants');
 const pool = mariadb.createPool({
 	host: 'localhost',
 	user: 'root',
-	password: 'password',
+	password: DATABASE_PASSWORD,
 	connectionLimit: 10,
 	database: 'cleanbase'
 });

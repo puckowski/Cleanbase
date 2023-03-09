@@ -3,10 +3,11 @@ const { parentPort, workerData } = require("worker_threads");
 var cp = require('child_process');
 var fs = require('fs');
 const mariadb = require('mariadb');
+const { DATABASE_PASSWORD } = require("./constants");
 const pool = mariadb.createPool({
     host: 'localhost',
     user: 'root',
-    password: 'password',
+    password: DATABASE_PASSWORD,
     connectionLimit: 10,
     database: 'cleanbase'
 });
