@@ -1,0 +1,3 @@
+const DATABASE_PASSWORD = 'password';
+
+exports.DATABASE_PASSWORD = DATABASE_PASSWORD;
