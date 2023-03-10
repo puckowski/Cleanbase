@@ -210,6 +210,13 @@ POST body:
 }
 Updates user password forcibly. Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Password must be at least 6 characters and less than 33 characters.
 
+## Version 1.3
+
+- Update dependencies.
+- Clean up basic responses.
+- Clean up console logging.
+- Add constants for JWT expiry, Formidable max upload size, and endpoint timeout.
+
 ## Version 1.2
 
 - Create constants file for database credentials.
