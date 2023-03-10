@@ -19,13 +19,12 @@ async function runStoppedContainers() {
 		// console.error(err);
 	}
 
-	console.log('run stopped containers after removing file');
+	console.log('Run stopped containers after removing file');
 
 	cp.exec('./removestopped.sh', (error, stdout, stderr) => {
 		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
-			console.log(error);
 			// return;
 		}
 		if (stderr) {
@@ -33,13 +32,11 @@ async function runStoppedContainers() {
 			console.log(stderr);
 			// return;
 		}
-		console.log('Result of shell script execution', stdout);
 
 		cp.exec('./runstopped.sh', async (error, stdout, stderr) => {
 			// catch err, stdout, stderr
 			if (error) {
 				console.log('Error in removing files');
-				console.log(error);
 				// return;
 			}
 			if (stderr) {
@@ -47,7 +44,6 @@ async function runStoppedContainers() {
 				console.log(stderr);
 				// return;
 			}
-			console.log('Result of shell script execution', stdout);
 
 			const runningSet = new Set();
 
@@ -59,14 +55,12 @@ async function runStoppedContainers() {
 
 				if (port !== '') {
 					runningSet.add(Number(port));
-					console.log('added port to set: ' + port);
 				}
 			});
 
 			let conn;
 			try {
 				conn = await pool.getConnection();
-				console.log("got connection");
 
 				const portsToRun = await conn.query("SELECT service_port, service_endpoint, service_name from tbl_endpoint LEFT JOIN tbl_service ON tbl_service.id = service_id");
 
@@ -75,14 +69,11 @@ async function runStoppedContainers() {
 						const toRun = portRow.service_port;
 
 						if (!runningSet.has(toRun)) {
-							console.log('run : ' + './restartstopped.sh ' + portRow.service_name + portRow.service_endpoint + ':1.0 ' + toRun + ' ' + portRow.service_name);
-
 							cp.execSync('./restartstopped.sh ' + portRow.service_name + portRow.service_endpoint + ':1.0 ' + toRun
 								+ ' ' + portRow.service_name, (error, stdout, stderr) => {
 									// catch err, stdout, stderr
 									if (error) {
 										console.log('Error in removing files');
-										console.log(error);
 										// return;
 									}
 									if (stderr) {
@@ -90,22 +81,14 @@ async function runStoppedContainers() {
 										console.log(stderr);
 										// return;
 									}
-									console.log('Result of shell script execution', stdout);
 								});
 						}
 					});
-
-					console.log('exit');
 
 					if (conn) conn.end();
 
 					process.exit(1);
 				} else {
-					console.log('ports to run length: ' + portsToRun.length);
-					console.log('set size: ' + runningSet.size);
-
-					console.log('exit');
-
 					if (conn) conn.end();
 
 					process.exit(1);

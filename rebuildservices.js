@@ -22,13 +22,10 @@ async function rebuildServices() {
 		// console.error(err);
 	}
 
-	console.log('run rebuild services');
-
 	cp.exec('./isserviceready.sh', async (error, stdout, stderr) => {
 		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
-			console.log(error);
 			// return;
 		}
 		if (stderr) {
@@ -36,7 +33,6 @@ async function rebuildServices() {
 			console.log(stderr);
 			// return;
 		}
-		console.log('Result of shell script execution', stdout);
 
 		const runningSet = new Set();
 		const serviceNameSet = new Set();
@@ -46,12 +42,9 @@ async function rebuildServices() {
 			if (line.includes('/usr/disk-images/')) {
 				let service = line.substring(line.indexOf('/usr/disk-images/') + 17);
 
-				console.log('proposed service: ' + service);
-
 				const closeParenCount = service.split(')').length - 1;
 
 				if (service.endsWith(')') && closeParenCount === 1) {
-					console.log('add service: ' + service.substring(0, service.length - 1));
 					runningSet.add(service.substring(0, service.length - 1), true);
 				}
 			}
@@ -60,7 +53,6 @@ async function rebuildServices() {
 		let conn;
 		try {
 			conn = await pool.getConnection();
-			console.log("got connection");
 
 			const portsToRun = await conn.query("SELECT service_port, service_endpoint, service_name from tbl_endpoint LEFT JOIN tbl_service ON tbl_service.id = service_id");
 
@@ -69,14 +61,12 @@ async function rebuildServices() {
 					const toRun = portRow.service_name;
 
 					if (!runningSet.has(toRun) && !serviceNameSet.has(portRow.service_name)) {
-						console.log('run : ' + './rebuildservices.sh ' + portRow.service_name);
 						serviceNameSet.add(portRow.service_name);
 
 						cp.execSync('./rebuildservices.sh ' + portRow.service_name, (error, stdout, stderr) => {
 							// catch err, stdout, stderr
 							if (error) {
 								console.log('Error in removing files');
-								console.log(error);
 								// return;
 							}
 							if (stderr) {
@@ -84,24 +74,15 @@ async function rebuildServices() {
 								console.log(stderr);
 								// return;
 							}
-							console.log('Result of shell script execution', stdout);
 						});
 					} else {
-						console.log('skip : ' + './rebuildservices.sh ' + portRow.service_name);
 					}
 				});
-
-				console.log('exit');
 
 				if (conn) conn.end();
 
 				process.exit(1);
 			} else {
-				console.log('ports to run length: ' + portsToRun.length);
-				console.log('set size: ' + runningSet.size);
-
-				console.log('exit');
-
 				if (conn) conn.end();
 
 				process.exit(1);

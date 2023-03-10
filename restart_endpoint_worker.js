@@ -22,7 +22,6 @@ cp.execSync('./stopcontainer.sh ' + port, (error, stdout, stderr) => {
     // catch err, stdout, stderr
     if (error) {
         console.log('Error in removing files');
-        console.log(error);
         return;
     }
     if (stderr) {
@@ -30,8 +29,6 @@ cp.execSync('./stopcontainer.sh ' + port, (error, stdout, stderr) => {
         console.log(stderr);
         // return;
     }
-    console.log('Result of shell script execution', stdout);
-    console.log('CONTAINER STOPPED');
 
     return;
 });
@@ -43,13 +40,10 @@ try {
     console.error(err);
 }
 
-console.log('run stopped containers after removing file');
-
 cp.exec('./removestopped.sh', (error, stdout, stderr) => {
     // catch err, stdout, stderr
     if (error) {
         console.log('Error in removing files');
-        console.log(error);
         // return;
     }
     if (stderr) {
@@ -57,13 +51,11 @@ cp.exec('./removestopped.sh', (error, stdout, stderr) => {
         console.log(stderr);
         // return;
     }
-    console.log('Result of shell script execution', stdout);
 
     cp.exec('./runstopped.sh', async (error, stdout, stderr) => {
         // catch err, stdout, stderr
         if (error) {
             console.log('Error in removing files');
-            console.log(error);
             // return;
         }
         if (stderr) {
@@ -71,7 +63,6 @@ cp.exec('./removestopped.sh', (error, stdout, stderr) => {
             console.log(stderr);
             // return;
         }
-        console.log('Result of shell script execution', stdout);
 
         const runningSet = new Set();
 
@@ -83,14 +74,12 @@ cp.exec('./removestopped.sh', (error, stdout, stderr) => {
 
             if (port !== '') {
                 runningSet.add(Number(port));
-                console.log('added port to set: ' + port);
             }
         });
 
         let conn;
         try {
             conn = await pool.getConnection();
-            console.log("got connection");
 
             const portsToRun = await conn.query("SELECT service_port, service_endpoint, service_name from tbl_endpoint LEFT JOIN tbl_service ON tbl_service.id = service_id");
 
@@ -99,14 +88,11 @@ cp.exec('./removestopped.sh', (error, stdout, stderr) => {
                     const toRun = portRow.service_port;
 
                     if (!runningSet.has(toRun)) {
-                        console.log('run : ' + toRun + ' ' + portRow.service_name + portRow.service_endpoint + ':1.0');
-
                         cp.exec('./restartstopped.sh ' + portRow.service_name + portRow.service_endpoint + ':1.0 ' + toRun
                             + ' ' + portRow.service_name, (error, stdout, stderr) => {
                                 // catch err, stdout, stderr
                                 if (error) {
                                     console.log('Error in removing files');
-                                    console.log(error);
                                     // return;
                                 }
                                 if (stderr) {
@@ -114,7 +100,6 @@ cp.exec('./removestopped.sh', (error, stdout, stderr) => {
                                     console.log(stderr);
                                     // return;
                                 }
-                                console.log('Result of shell script execution', stdout);
 
                                 // endpointReadyMap.set(portRow.service_endpoint, true);
                                 parentPort.postMessage({endpointSegment: portRow.service_endpoint, ready: true});
@@ -124,8 +109,6 @@ cp.exec('./removestopped.sh', (error, stdout, stderr) => {
                     return;
                 });
             } else {
-                console.log('ports to run length: ' + portsToRun.length);
-                console.log('set size: ' + runningSet.size);
             }
         } catch (err) {
             throw err;

@@ -24,7 +24,7 @@ const serviceReadyMap = new Map();
 //var neededstats = [];
 
 const mariadb = require('mariadb');
-const { DATABASE_PASSWORD } = require('./constants');
+const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS } = require('./constants');
 const pool = mariadb.createPool({
 	host: 'localhost',
 	user: 'root',
@@ -33,7 +33,7 @@ const pool = mariadb.createPool({
 	database: 'cleanbase'
 });
 
-const jwtExpirySeconds = 900; // 15 minutes
+const jwtExpirySeconds = JWT_EXPIRY_SECONDS;
 const uploadDir = path.join(__dirname, '/uploads/');
 
 if (!fs.existsSync(uploadDir)) {
@@ -41,9 +41,11 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
+	const startDate = new Date();
+
 	const form = new formidable.IncomingForm();
 	// file size limit 50MB. change according to your needs
-	form.maxFileSize = 50 * 1024 * 1024;
+	form.maxFileSize = ENDPOINT_ZIP_MAX_MEGABYTES * 1024 * 1024;
 	form.keepExtensions = true;
 	form.multiples = true;
 	form.uploadDir = uploadDir;
@@ -94,9 +96,6 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 			let conn;
 			try {
 				conn = await pool.getConnection();
-				console.log("got connection");
-
-				console.log('SELECT service_password from tbl_service WHERE service_name = ' + serviceSegment);
 
 				const serviceRows = await conn.query("SELECT service_password from tbl_service WHERE service_name = ?", [
 					serviceSegment
@@ -107,7 +106,6 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 
 					const validPassword = await bcrypt.compare(name, password);
 					if (validPassword) {
-						console.log('valid password');
 					} else {
 						const rows = await conn.query("SELECT tbl_service.id from tbl_service LEFT JOIN tbl_endpoint ON service_id = tbl_service.id where service_name = ? and service_endpoint = ?", [
 							serviceSegment, endpointSegment
@@ -138,6 +136,9 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 		// res.status(200).json({ uploaded: true });
 		res.writeHead(200, { 'Content-Type': 'text/plain' });
 		res.end('uploaded!\n');
+
+		const endDate = new Date();
+		console.log('Formidable time ellapsed:' + (endDate - startDate));
 
 		// iterate through each file path and extract them
 		filesInfo.forEach(({ filePath, fileName }) => {
@@ -185,12 +186,10 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 }
 
 async function createService(serviceName, servicePassword, superuserId) {
-	console.log("start create service");
-
 	let conn;
 	try {
 		conn = await pool.getConnection();
-		console.log("got connection");
+
 		const rows = await conn.query("SELECT service_name from tbl_service WHERE service_name = ?", [
 			serviceName
 		]);
@@ -201,15 +200,12 @@ async function createService(serviceName, servicePassword, superuserId) {
 			// now we set user password to hashed password
 			const hashedPass = await bcrypt.hash(servicePassword, salt);
 
-			console.log('insert service...');
-
 			const res = await conn.query("INSERT INTO tbl_service (service_name, service_password, superuser_id) VALUES (?, ?, ?)", [serviceName, hashedPass, superuserId]);
 
 			cp.exec('./createservice.sh ' + serviceName + ' ' + servicePassword, (error, stdout, stderr) => {
 				// catch err, stdout, stderr
 				if (error) {
 					console.log('Error in removing files');
-					console.log(error);
 					return;
 				}
 				if (stderr) {
@@ -217,12 +213,10 @@ async function createService(serviceName, servicePassword, superuserId) {
 					console.log(stderr);
 					// return;
 				}
-				console.log('Result of shell script execution', stdout);
 
 				serviceReadyMap.set(serviceName, true);
 			});
 		} else {
-			console.log("too many service name rows");
 		}
 	} catch (err) {
 		throw err;
@@ -232,12 +226,9 @@ async function createService(serviceName, servicePassword, superuserId) {
 }
 
 async function createEndpoint(req, res) {
-	console.log("start create endpoint");
-
 	let conn;
 	try {
 		conn = await pool.getConnection();
-		console.log("got connection");
 
 		const rows = await conn.query("SELECT service_port from tbl_endpoint ORDER BY service_port DESC");
 
@@ -248,8 +239,6 @@ async function createEndpoint(req, res) {
 		} else {
 			maxPort = 2999;
 		}
-
-		console.log('max port: ' + maxPort);
 
 		if (rows.length === 0 || maxPort < 3125) {
 			var url_parts = url.parse(req.url);
@@ -264,19 +253,12 @@ async function createEndpoint(req, res) {
 				serviceSegment
 			]);
 
-			console.log(serviceRows.length + ' service rows');
-			console.log(endpointSegment);
-			console.log(endpointFormatted);
-			console.log(endpointSegment.length + ' ' + endpointFormatted.length);
-
 			if (serviceRows.length > 0 && endpointSegment.length === endpointFormatted.length) {
 				const serviceId = serviceRows[0].id;
 
 				const endpointRows = await conn.query("SELECT service_endpoint from tbl_endpoint WHERE service_id = ? AND service_endpoint = ?", [
 					serviceId, endpointSegment
 				]);
-
-				console.log('endpoint rows: ' + endpointRows.length);
 
 				if (endpointRows.length === 0) {
 					maxPort++;
@@ -288,7 +270,6 @@ async function createEndpoint(req, res) {
 				}
 			}
 		} else {
-			console.log("can't bind to new port");
 		}
 	} catch (err) {
 		throw err;
@@ -301,8 +282,6 @@ async function createEndpoint(req, res) {
 
 
 async function removeEndpoint(req, res, postBody) {
-	console.log("start remove endpoint");
-
 	if (!postBody || !postBody.password || postBody.password === '') {
 		return;
 	}
@@ -310,7 +289,6 @@ async function removeEndpoint(req, res, postBody) {
 	let conn;
 	try {
 		conn = await pool.getConnection();
-		console.log("got connection");
 
 		var url_parts = url.parse(req.url);
 		url_parts = url_parts.path;
@@ -337,8 +315,6 @@ async function removeEndpoint(req, res, postBody) {
 				if (endpointRows.length > 0) {
 					const port = endpointRows[0].service_port;
 					const buildPath = endpointRows[0].build_path;
-
-					console.log('DELETE FROM tbl_endpoint WHERE service_endpoint = ' + endpointSegment + ' and service_id = ' + serviceId);
 
 					const res = await conn.query("DELETE FROM tbl_endpoint WHERE service_endpoint = ? and service_id = ?", [
 						endpointSegment, serviceId
@@ -374,8 +350,6 @@ async function removeEndpoint(req, res, postBody) {
 }
 
 async function restartEndpoint(req, res, postBody) {
-	console.log("start restart endpoint");
-
 	if (!postBody || !postBody.password || postBody.password === '') {
 		return;
 	}
@@ -383,7 +357,6 @@ async function restartEndpoint(req, res, postBody) {
 	let conn;
 	try {
 		conn = await pool.getConnection();
-		console.log("got connection");
 
 		var url_parts = url.parse(req.url);
 		url_parts = url_parts.path;
@@ -403,16 +376,12 @@ async function restartEndpoint(req, res, postBody) {
 
 			const validPassword = await bcrypt.compare(postBody.password, password);
 			if (validPassword) {
-				console.log('valid password');
-
 				const endpointRows = await conn.query("SELECT service_port from tbl_endpoint WHERE service_id = ? AND service_endpoint = ?", [
 					serviceId, endpointSegment
 				]);
 
 				if (endpointRows.length > 0) {
 					const port = endpointRows[0].service_port;
-
-					console.log('found endpoint with port: ' + port);
 
 					const worker = new Worker(
 						__dirname + "/restart_endpoint_worker.js",
@@ -459,7 +428,6 @@ async function addUser(req, postBody) {
 	let conn;
 	try {
 		conn = await pool.getConnection();
-		console.log("got connection");
 
 		const rows = await conn.query("SELECT id, service_password from tbl_service where service_name = ?", [
 			serviceSegment
@@ -472,8 +440,6 @@ async function addUser(req, postBody) {
 			password = rows[0].service_password;
 		}
 
-		console.log('pass check');
-
 		if (!id || id < 1 || !password) {
 			return;
 		}
@@ -481,7 +447,6 @@ async function addUser(req, postBody) {
 		// check user password with hashed password stored in the database
 		const validPassword = await bcrypt.compare(postBody.password, password);
 		if (validPassword) {
-			console.log('pass ok');
 		} else {
 			return;
 		}
@@ -491,20 +456,14 @@ async function addUser(req, postBody) {
 
 		let userLevel = postBody.userLevel;
 
-		console.log('user level: ' + userLevel);
-
 		if (userLevel === null || userLevel === undefined || typeof userLevel !== 'number' || userLevel < 1 || userLevel > 10) {
 			if (userLevel === null || userLevel === undefined) {
-				console.log('not defined');
 				userLevel = 1;
 			} else if (typeof userLevel === 'number' && userLevel > 10) {
-				console.log('exceeds max');
 				userLevel = 10;
 			} else if (typeof userLevel === 'number' && userLevel < 1) {
-				console.log('minimum not met');
 				userLevel = 1;
 			} else if (typeof userLevel !== 'number') {
-				console.log(typeof userLevel + ' not number');
 				userLevel = 1;
 			}
 		}
@@ -517,8 +476,6 @@ async function addUser(req, postBody) {
 			]);
 
 			if (existingRows.length == 0) {
-				console.log('username and pass ok...');
-
 				// generate salt to hash password
 				const salt = await bcrypt.genSalt(10);
 				// now we set user password to hashed password
@@ -555,7 +512,6 @@ async function updateUser(req, postBody) {
 	let conn;
 	try {
 		conn = await pool.getConnection();
-		console.log("got connection");
 
 		const rows = await conn.query("SELECT id, service_password from tbl_service where service_name = ?", [
 			serviceSegment
@@ -568,8 +524,6 @@ async function updateUser(req, postBody) {
 			password = rows[0].service_password;
 		}
 
-		console.log('pass check');
-
 		if (!id || id < 1 || !password) {
 			return;
 		}
@@ -577,7 +531,6 @@ async function updateUser(req, postBody) {
 		// check user password with hashed password stored in the database
 		const validPassword = await bcrypt.compare(postBody.password, password);
 		if (validPassword) {
-			console.log('pass ok');
 		} else {
 			return;
 		}
@@ -597,8 +550,6 @@ async function updateUser(req, postBody) {
 			if (existingRows.length === 1 && existingRows[0].user_password && existingRows[0].id && existingRows[0].id > 0) {
 				const validPassword = await bcrypt.compare(userPass, existingRows[0].user_password);
 				if (validPassword) {
-					console.log('username and pass ok...');
-
 					if (newPass.length >= 6 && newPass.length <= 32) {
 						// generate salt to hash password
 						const salt = await bcrypt.genSalt(10);
@@ -638,7 +589,6 @@ async function resetUser(req, postBody) {
 	let conn;
 	try {
 		conn = await pool.getConnection();
-		console.log("got connection");
 
 		const rows = await conn.query("SELECT id, service_password from tbl_service where service_name = ?", [
 			serviceSegment
@@ -651,8 +601,6 @@ async function resetUser(req, postBody) {
 			password = rows[0].service_password;
 		}
 
-		console.log('pass check');
-
 		if (!id || id < 1 || !password) {
 			return;
 		}
@@ -660,7 +608,6 @@ async function resetUser(req, postBody) {
 		// check user password with hashed password stored in the database
 		const validPassword = await bcrypt.compare(postBody.password, password);
 		if (validPassword) {
-			console.log('pass ok');
 		} else {
 			return;
 		}
@@ -676,8 +623,6 @@ async function resetUser(req, postBody) {
 			]);
 
 			if (existingRows.length === 1 && existingRows[0].id && existingRows[0].id > 0) {
-				console.log('username and pass ok...');
-
 				if (newPass.length >= 6 && newPass.length <= 32) {
 					// generate salt to hash password
 					const salt = await bcrypt.genSalt(10);
@@ -716,7 +661,6 @@ async function removeUser(req, postBody) {
 	let conn;
 	try {
 		conn = await pool.getConnection();
-		console.log("got connection");
 
 		const rows = await conn.query("SELECT id, service_password from tbl_service where service_name = ?", [
 			serviceSegment
@@ -729,8 +673,6 @@ async function removeUser(req, postBody) {
 			password = rows[0].service_password;
 		}
 
-		console.log('pass check');
-
 		if (!id || id < 1 || !password) {
 			return;
 		}
@@ -738,7 +680,6 @@ async function removeUser(req, postBody) {
 		// check user password with hashed password stored in the database
 		const validPassword = await bcrypt.compare(postBody.password, password);
 		if (validPassword) {
-			console.log('pass ok');
 		} else {
 			return;
 		}
@@ -752,8 +693,6 @@ async function removeUser(req, postBody) {
 			]);
 
 			if (existingRows.length == 1) {
-				console.log('username and pass ok...');
-
 				const res = await conn.query("DELETE FROM tbl_user WHERE id = ? AND user_name = ?", [
 					existingRows[0].id, existingRows[0].user_name
 				]);
@@ -776,7 +715,6 @@ async function addSuperuser(req, postBody) {
 	let conn;
 	try {
 		conn = await pool.getConnection();
-		console.log("got connection");
 
 		const rows = await conn.query("SELECT user_name from tbl_superuser where user_name = ?", [
 			postBody.username
@@ -789,8 +727,6 @@ async function addSuperuser(req, postBody) {
 			const usernameFormatted = username.replace(/[^a-z0-9]/gi, '');
 
 			if (usernameFormatted === username && username.length >= 6 && username.length <= 32 && userPass.length >= 6 && userPass.length <= 32) {
-				console.log('username and pass ok...');
-
 				// generate salt to hash password
 				const salt = await bcrypt.genSalt(10);
 				// now we set user password to hashed password
@@ -818,7 +754,6 @@ async function loginSuperuser(req, postBody) {
 	let conn;
 	try {
 		conn = await pool.getConnection();
-		console.log("got connection");
 
 		const rows = await conn.query("SELECT id, user_name, user_password, is_active from tbl_superuser where user_name = ?", [
 			postBody.username
@@ -840,8 +775,6 @@ async function loginSuperuser(req, postBody) {
 			if ((active === 1 || active === true) && usernameFormatted === username && username.length >= 6 && username.length <= 32 && userPass.length >= 6 && userPass.length <= 32) {
 				const validPassword = await bcrypt.compare(userPass, password);
 				if (validPassword) {
-					console.log('username and pass ok...');
-
 					const newToken = jwt.sign({ name, user_id: id }, jwtKey, {
 						algorithm: "HS256",
 						expiresIn: jwtExpirySeconds,
@@ -877,7 +810,6 @@ async function loginUser(req, postBody) {
 	let conn;
 	try {
 		conn = await pool.getConnection();
-		console.log("got connection");
 
 		const rows = await conn.query("SELECT id from tbl_service where service_name = ?", [
 			serviceSegment
@@ -906,8 +838,6 @@ async function loginUser(req, postBody) {
 			if (existingRows.length > 0 && existingRows[0].user_password && existingRows[0].id && existingRows[0].id > 0) {
 				const validPassword = await bcrypt.compare(userPass, existingRows[0].user_password);
 				if (validPassword) {
-					console.log('username and pass ok...');
-
 					const newToken = jwt.sign({ username, user_id: existingRows[0].id, service_id: id, user_level: existingRows[0].user_level }, jwtKey, {
 						algorithm: "HS256",
 						expiresIn: jwtExpirySeconds,
@@ -943,7 +873,6 @@ async function validateJwt(req, postBody) {
 	let conn;
 	try {
 		conn = await pool.getConnection();
-		console.log("got connection");
 
 		const rows = await conn.query("SELECT id from tbl_service where service_name = ?", [
 			serviceSegment
@@ -986,19 +915,20 @@ async function validateJwt(req, postBody) {
 
 async function runStoppedContainers() {
 	try {
-		fs.unlinkSync('runningports.txt');
+		if (fs.existsSync('runningports.txt')) {
+			fs.unlinkSync('runningports.txt');
+		}
 		//file removed
 	} catch (err) {
 		console.error(err);
 	}
 
-	console.log('run stopped containers after removing file');
+	console.log('Run stopped containers after removing file');
 
 	cp.exec('./removestopped.sh', (error, stdout, stderr) => {
 		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
-			console.log(error);
 			// return;
 		}
 		if (stderr) {
@@ -1006,13 +936,11 @@ async function runStoppedContainers() {
 			console.log(stderr);
 			// return;
 		}
-		console.log('Result of shell script execution', stdout);
 
 		cp.exec('./runstopped.sh', async (error, stdout, stderr) => {
 			// catch err, stdout, stderr
 			if (error) {
 				console.log('Error in removing files');
-				console.log(error);
 				// return;
 			}
 			if (stderr) {
@@ -1020,7 +948,6 @@ async function runStoppedContainers() {
 				console.log(stderr);
 				// return;
 			}
-			console.log('Result of shell script execution', stdout);
 
 			const runningSet = new Set();
 
@@ -1032,14 +959,12 @@ async function runStoppedContainers() {
 
 				if (port !== '') {
 					runningSet.add(Number(port));
-					console.log('added port to set: ' + port);
 				}
 			});
 
 			let conn;
 			try {
 				conn = await pool.getConnection();
-				console.log("got connection");
 
 				const portsToRun = await conn.query("SELECT service_port, service_endpoint, service_name from tbl_endpoint LEFT JOIN tbl_service ON tbl_service.id = service_id");
 
@@ -1048,14 +973,11 @@ async function runStoppedContainers() {
 						const toRun = portRow.service_port;
 
 						if (!runningSet.has(toRun)) {
-							console.log('run : ' + toRun + ' ' + portRow.service_name + portRow.service_endpoint + ':1.0');
-
 							cp.exec('./restartstopped.sh ' + portRow.service_name + portRow.service_endpoint + ':1.0 ' + toRun
 								+ ' ' + portRow.service_name, (error, stdout, stderr) => {
 									// catch err, stdout, stderr
 									if (error) {
 										console.log('Error in removing files');
-										console.log(error);
 										// return;
 									}
 									if (stderr) {
@@ -1063,7 +985,6 @@ async function runStoppedContainers() {
 										console.log(stderr);
 										// return;
 									}
-									console.log('Result of shell script execution', stdout);
 
 									endpointReadyMap.set(portRow.service_endpoint, true);
 								});
@@ -1071,9 +992,6 @@ async function runStoppedContainers() {
 
 						return;
 					});
-				} else {
-					console.log('ports to run length: ' + portsToRun.length);
-					console.log('set size: ' + runningSet.size);
 				}
 			} catch (err) {
 				throw err;
@@ -1094,7 +1012,6 @@ async function stopContainer(port) {
 		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
-			console.log(error);
 			return;
 		}
 		if (stderr) {
@@ -1102,16 +1019,12 @@ async function stopContainer(port) {
 			console.log(stderr);
 			// return;
 		}
-		console.log('Result of shell script execution', stdout);
-		console.log('CONTAINER STOPPED');
 
 		return;
 	});
 }
 
 async function executeEndpoint(firstSegment, secondSegment, req, res) {
-	console.log('potential proxy request...');
-
 	if (!firstSegment || !secondSegment) {
 		return;
 	}
@@ -1119,7 +1032,6 @@ async function executeEndpoint(firstSegment, secondSegment, req, res) {
 	let conn;
 	try {
 		conn = await pool.getConnection();
-		console.log("got connection");
 
 		const rows = await conn.query("SELECT service_name, service_endpoint, service_port from tbl_service LEFT JOIN tbl_endpoint ON service_id = tbl_service.id where service_name = ? and service_endpoint = ?", [
 			firstSegment, secondSegment
@@ -1168,8 +1080,6 @@ async function isServiceReady(postBody) {
 }
 
 async function loadReadyServices() {
-	console.log('load ready services...');
-
 	try {
 		fs.unlinkSync('readyservices.txt');
 		// file removed
@@ -1181,7 +1091,6 @@ async function loadReadyServices() {
 		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
-			console.log(error);
 			return;
 		}
 		if (stderr) {
@@ -1189,19 +1098,15 @@ async function loadReadyServices() {
 			console.log(stderr);
 			// return;
 		}
-		console.log('Result of shell script execution', stdout);
 
 		const allFileContents = fs.readFileSync('readyservices.txt', 'utf-8');
 		allFileContents.split(/\r?\n/).forEach(line => {
 			if (line.includes('/usr/disk-images/')) {
 				let service = line.substring(line.indexOf('/usr/disk-images/') + 17);
 
-				console.log('proposed service: ' + service);
-
 				const closeParenCount = service.split(')').length - 1;
 
 				if (service.endsWith(')') && closeParenCount === 1) {
-					console.log('add service: ' + service.substring(0, service.length - 1));
 					serviceReadyMap.set(service.substring(0, service.length - 1), true);
 				}
 			}
@@ -1212,10 +1117,10 @@ async function loadReadyServices() {
 }
 
 async function loadReadyEndpoints() {
-	console.log('load ready endpoints...');
-
 	try {
-		fs.unlinkSync('runningports.txt');
+		if (fs.existsSync('runningports.txt')) {
+			fs.unlinkSync('runningports.txt');
+		}
 		// file removed
 	} catch (err) {
 		// console.error(err);
@@ -1225,7 +1130,6 @@ async function loadReadyEndpoints() {
 		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
-			console.log(error);
 			return;
 		}
 		if (stderr) {
@@ -1233,7 +1137,6 @@ async function loadReadyEndpoints() {
 			console.log(stderr);
 			// return;
 		}
-		console.log('Result of shell script execution', stdout);
 
 		const runningSet = new Set();
 
@@ -1245,14 +1148,12 @@ async function loadReadyEndpoints() {
 
 			if (port !== '') {
 				runningSet.add(Number(port));
-				console.log('added port to set: ' + port);
 			}
 		});
 
 		let conn;
 		try {
 			conn = await pool.getConnection();
-			console.log("got connection");
 
 			const portsToRun = await conn.query("SELECT service_port, service_endpoint, service_name from tbl_endpoint LEFT JOIN tbl_service ON tbl_service.id = service_id");
 
@@ -1260,8 +1161,6 @@ async function loadReadyEndpoints() {
 				const toRun = portRow.service_port;
 
 				if (runningSet.has(toRun)) {
-					console.log('is running : ' + toRun + ' ' + portRow.service_name + portRow.service_endpoint + ':1.0');
-
 					endpointReadyMap.set(portRow.service_endpoint, true);
 				}
 
@@ -1288,7 +1187,6 @@ https.createServer(serverOptions, async function (req, res) {
 	url_parts = url_parts.split('/');
 
 	const firstSegment = url_parts[1];
-	console.log('first segment: ' + firstSegment);
 
 	if (req.method === 'POST' && firstSegment === 'createservice') {
 		const bearer = req.headers['authorization'];
@@ -1326,19 +1224,17 @@ https.createServer(serverOptions, async function (req, res) {
 		req.on('data', chunk => {
 			body += chunk.toString(); // convert Buffer to string
 		});
-		console.log('loading service data...');
+
 		req.on('end', () => {
 			res.end('ok');
 
 			const bodyJson = JSON.parse(body);
 
 			if (bodyJson && bodyJson.name && bodyJson.password && bodyJson.name.length >= 6 && bodyJson.password.length >= 6) {
-				console.log('formatting service name...');
 				const nameOriginal = bodyJson.name;
 				const nameFormatted = nameOriginal.replace(/[^a-z0-9]/gi, '');
 
 				if (nameOriginal.length === nameFormatted.length && nameFormatted.length <= 32 && bodyJson.password.length <= 32) {
-					console.log('creating service...');
 					createService(bodyJson.name, bodyJson.password, payload.user_id);
 				}
 			}
@@ -1667,8 +1563,6 @@ https.createServer(serverOptions, async function (req, res) {
 			res.end(token);
 		});
 	} else {
-		console.log('potential proxy request');
-
 		const secondSegment = url_parts[2];
 
 		const truthyIfProxied = await executeEndpoint(firstSegment, secondSegment, req, res);
@@ -1681,7 +1575,6 @@ https.createServer(serverOptions, async function (req, res) {
 }).listen(443, '0.0.0.0');
 
 console.log('Server running.');
-console.log(pool);
 
 loadReadyServices();
 loadReadyEndpoints();

@@ -4,8 +4,6 @@ var fs = require('fs');
 
 const { endpointSegment, port, buildPath } = workerData;
 
-console.log('remove file: ' + buildPath);
-
 try {
     fs.unlinkSync(buildPath)
     // file removed
@@ -21,7 +19,6 @@ cp.execSync('./stopcontainer.sh ' + port, (error, stdout, stderr) => {
     // catch err, stdout, stderr
     if (error) {
         console.log('Error in removing files');
-        console.log(error);
         return;
     }
     if (stderr) {
@@ -29,8 +26,6 @@ cp.execSync('./stopcontainer.sh ' + port, (error, stdout, stderr) => {
         console.log(stderr);
         // return;
     }
-    console.log('Result of shell script execution', stdout);
-    console.log('CONTAINER STOPPED');
 
     return;
 });

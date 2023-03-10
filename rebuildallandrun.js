@@ -25,7 +25,6 @@ async function stopContainer(port) {
 		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
-			console.log(error);
 			return;
 		}
 		if (stderr) {
@@ -33,8 +32,6 @@ async function stopContainer(port) {
 			console.log(stderr);
 			// return;
 		}
-		console.log('Result of shell script execution', stdout);
-		console.log('CONTAINER STOPPED');
 
 		return;
 	});
@@ -49,13 +46,12 @@ async function runStoppedContainers() {
 		// console.error(err);
 	}
 
-	console.log('run stopped containers after removing file');
+	console.log('Run stopped containers after removing file');
 
 	cp.exec('./removestopped.sh', (error, stdout, stderr) => {
 		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
-			console.log(error);
 			// return;
 		}
 		if (stderr) {
@@ -63,13 +59,11 @@ async function runStoppedContainers() {
 			console.log(stderr);
 			// return;
 		}
-		console.log('Result of shell script execution', stdout);
 
 		cp.exec('./runstopped.sh', async (error, stdout, stderr) => {
 			// catch err, stdout, stderr
 			if (error) {
 				console.log('Error in removing files');
-				console.log(error);
 				// return;
 			}
 			if (stderr) {
@@ -77,7 +71,6 @@ async function runStoppedContainers() {
 				console.log(stderr);
 				// return;
 			}
-			console.log('Result of shell script execution', stdout);
 
 			const runningSet = new Set();
 
@@ -89,35 +82,29 @@ async function runStoppedContainers() {
 
 				if (port !== '') {
 					runningSet.add(Number(port));
-					console.log('added port to set: ' + port);
 				}
 			});
 
 			let conn;
 			try {
 				conn = await pool.getConnection();
-				console.log("got connection");
 
 				const portsToRun = await conn.query("SELECT service_port, service_endpoint, service_name from tbl_endpoint LEFT JOIN tbl_service ON tbl_service.id = service_id");
 
 				if (portsToRun.length > 0) {
 					portsToRun.forEach(portRow => {
-						console.log('add port: ' + portRow.service_port + ' ' + portRow.service_name);
 						toStartCount++;
 					});
 
 					portsToRun.forEach(portRow => {
 						const toRun = portRow.service_port;
 
-						if (!runningSet.has(toRun)) {
-							console.log('run : ' + toRun + ' ' + portRow.service_name + portRow.service_endpoint + ':1.0');
-				
+						if (!runningSet.has(toRun)) {				
 							cp.exec('./restartstopped.sh ' + portRow.service_name + portRow.service_endpoint + ':1.0 ' + toRun
 								+ ' ' + portRow.service_name, (error, stdout, stderr) => {
 									// catch err, stdout, stderr
 									if (error) {
 										console.log('Error in removing files');
-										console.log(error);
 										// return;
 									}
 									if (stderr) {
@@ -125,7 +112,6 @@ async function runStoppedContainers() {
 										console.log(stderr);
 										// return;
 									}
-									console.log('Result of shell script execution', stdout);
 
 									toStartCount--;
 
@@ -138,9 +124,6 @@ async function runStoppedContainers() {
 						return;
 					});
 				} else {
-					console.log('ports to run length: ' + portsToRun.length);
-					console.log('set size: ' + runningSet.size);
-
 					process.exit(1);
 				}
 			} catch (err) {
@@ -160,13 +143,10 @@ async function rebuildAllAndRun() {
 		// console.error(err);
 	}
 
-	console.log('rebuild all and run...');
-
 	cp.exec('./listbuilds.sh', async (error, stdout, stderr) => {
 		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
-			console.log(error);
 			return;
 		}
 		if (stderr) {
@@ -174,9 +154,6 @@ async function rebuildAllAndRun() {
 			console.log(stderr);
 			// return;
 		}
-		console.log('Result of shell script execution', stdout);
-
-		console.log('parsing build set');
 
 		const buildSet = new Set();
 
@@ -184,7 +161,6 @@ async function rebuildAllAndRun() {
 		allFileContents.split(/\r?\n/).forEach(line => {
 			if (line !== '') {
 				buildSet.add(line);
-				console.log('ADDED BUILD: ' + line);
 			}
 		});
 
@@ -195,13 +171,11 @@ async function rebuildAllAndRun() {
 			const serviceSegment = tokens[0];
 			const endpointSegment = tokens[1];
 
-			console.log('./endpoint.sh ' + (serviceSegment + '_' + endpointSegment + '_build.zip') + ' ' + (serviceSegment + endpointSegment));
 			cp.exec('./endpoint.sh ' + (serviceSegment + '_' + endpointSegment + '_build.zip') + ' ' + (serviceSegment + endpointSegment),
 				async (error, stdout, stderr) => {
 					// catch err, stdout, stderr
 					if (error) {
 						console.log('Error in removing files');
-						console.log(error);
 						return;
 					}
 					if (stderr) {
@@ -209,13 +183,10 @@ async function rebuildAllAndRun() {
 						console.log(stderr);
 						// return;
 					}
-					console.log('Result of shell script execution', stdout);
-					console.log('endpoint script finished...');
 					
 					let conn;
 					try {
 						conn = await pool.getConnection();
-						console.log("got connection for port stop query");
 
 						const rows = await conn.query("SELECT service_port from tbl_service LEFT JOIN tbl_endpoint ON service_id = tbl_service.id where service_name = ? and service_endpoint = ?", [
 							serviceSegment, endpointSegment
@@ -230,8 +201,6 @@ async function rebuildAllAndRun() {
 						if (!port || port < 3000) {
 							return;
 						}
-
-						console.log('try to stop port: ' + port);
 
 						await stopContainer(port);
 					} catch (err) {
@@ -250,7 +219,7 @@ async function rebuildAllAndRun() {
 
 async function run() {
 	await rebuildAllAndRun();
-	console.log('DONE');
+	console.log('Done');
 }
 
 run();
