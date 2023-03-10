@@ -8,8 +8,9 @@ const jwt = require("jsonwebtoken");
 const httpProxy = require('http-proxy');
 const bcrypt = require("bcrypt");
 const { Worker } = require("worker_threads");
+const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS, ENDPOINT_RESPONSE_MILLISECONDS } = require('./constants');
 
-const proxy = httpProxy.createProxy({ secure: false, proxyTimeout: 1000 });
+const proxy = httpProxy.createProxy({ secure: false, proxyTimeout: ENDPOINT_RESPONSE_MILLISECONDS });
 
 proxy.on('error', (err, req, res) => {
 	res.writeHead(405, { 'Content-Type': 'text/plain' });
@@ -21,10 +22,7 @@ const jwtKey = "1234567890";
 const endpointReadyMap = new Map();
 const serviceReadyMap = new Map();
 
-//var neededstats = [];
-
 const mariadb = require('mariadb');
-const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS } = require('./constants');
 const pool = mariadb.createPool({
 	host: 'localhost',
 	user: 'root',
@@ -1049,7 +1047,7 @@ async function executeEndpoint(firstSegment, secondSegment, req, res) {
 			return;
 		}
 
-		console.log('proxy request to : ' + 'https://127.0.0.1:' + port);
+		console.log('Proxy request to: ' + 'https://127.0.0.1:' + port);
 
 		proxy.web(req, res, { target: 'https://127.0.0.1:' + port });
 
