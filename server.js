@@ -56,7 +56,7 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 		if (err) {
 			// return res.status(500).json({ error: err });
 			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end('error!\n');
+			res.end('error\n');
 			console.log(err);
 			return null;
 		}
@@ -120,7 +120,7 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 						}
 
 						res.writeHead(200, { 'Content-Type': 'text/plain' });
-						res.end('error!\n');
+						res.end('error\n');
 						return null;
 					}
 				}
@@ -133,7 +133,7 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 
 		// res.status(200).json({ uploaded: true });
 		res.writeHead(200, { 'Content-Type': 'text/plain' });
-		res.end('uploaded!\n');
+		res.end('uploaded\n');
 
 		const endDate = new Date();
 		console.log('Formidable time ellapsed:' + (endDate - startDate));
@@ -1224,7 +1224,7 @@ https.createServer(serverOptions, async function (req, res) {
 		});
 
 		req.on('end', () => {
-			res.end('ok');
+			res.end('queued');
 
 			const bodyJson = JSON.parse(body);
 
@@ -1313,7 +1313,7 @@ https.createServer(serverOptions, async function (req, res) {
 			body += chunk.toString(); // convert Buffer to string
 		});
 		req.on('end', async () => {
-			res.end('ok');
+			res.end('queued');
 
 			const bodyJson = JSON.parse(body);
 
@@ -1321,7 +1321,7 @@ https.createServer(serverOptions, async function (req, res) {
 			await removeEndpoint(req, res, bodyJson);
 
 			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end('ok\n');
+			res.end('queued\n');
 		});
 	} else if (req.method === 'POST' && firstSegment === 'restartendpoint') {
 		const bearer = req.headers['authorization'];
@@ -1359,7 +1359,7 @@ https.createServer(serverOptions, async function (req, res) {
 			body += chunk.toString(); // convert Buffer to string
 		});
 		req.on('end', async () => {
-			res.end('ok');
+			res.end('queued');
 
 			const bodyJson = JSON.parse(body);
 
@@ -1367,7 +1367,7 @@ https.createServer(serverOptions, async function (req, res) {
 			await restartEndpoint(req, res, bodyJson);
 
 			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end('ok\n');
+			res.end('queued\n');
 		});
 	} else if (req.method === 'POST' && firstSegment === 'updateendpoint') {
 		const bearer = req.headers['authorization'];
@@ -1404,7 +1404,7 @@ https.createServer(serverOptions, async function (req, res) {
 		uploadMedia(req, res);
 
 		res.writeHead(200, { 'Content-Type': 'text/plain' });
-		res.end('Hello, World!\n');
+		res.end('queued\n');
 	} else if (req.method === 'POST' && firstSegment === 'adduser') {
 		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
 		let body = '';
@@ -1417,7 +1417,7 @@ https.createServer(serverOptions, async function (req, res) {
 			await addUser(req, bodyJson);
 
 			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end('Hello, World!\n');
+			res.end('added\n');
 		});
 	} else if (req.method === 'POST' && firstSegment === 'removeuser') {
 		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
@@ -1431,7 +1431,7 @@ https.createServer(serverOptions, async function (req, res) {
 			await removeUser(req, bodyJson);
 
 			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end('Hello, World!\n');
+			res.end('removed\n');
 		});
 	} else if (req.method === 'POST' && firstSegment === 'updateuser') {
 		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
@@ -1445,7 +1445,7 @@ https.createServer(serverOptions, async function (req, res) {
 			await updateUser(req, bodyJson);
 
 			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end('Hello, World!\n');
+			res.end('updated\n');
 		});
 	} else if (req.method === 'POST' && firstSegment === 'resetuser') {
 		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
@@ -1459,7 +1459,7 @@ https.createServer(serverOptions, async function (req, res) {
 			await resetUser(req, bodyJson);
 
 			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end('Hello, World!\n');
+			res.end('reset\n');
 		});
 	} else if (req.method === 'POST' && firstSegment === 'loginuser') {
 		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
@@ -1544,7 +1544,7 @@ https.createServer(serverOptions, async function (req, res) {
 			await addSuperuser(req, bodyJson);
 
 			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end('ok!\n');
+			res.end('added\n');
 		});
 	} else if (req.method === 'POST' && firstSegment === 'loginsuperuser') {
 		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
