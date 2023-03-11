@@ -17,21 +17,16 @@ const pool = mariadb.createPool({
 async function rebuildServices() {
 	try {
 		fs.unlinkSync('readyservices.txt');
-		// file removed
 	} catch (err) {
-		// console.error(err);
 	}
 
 	cp.exec('./isserviceready.sh', async (error, stdout, stderr) => {
-		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
-			// return;
 		}
 		if (stderr) {
-			console.log('has stderr output');
+			console.log('Has stderr output');
 			console.log(stderr);
-			// return;
 		}
 
 		const runningSet = new Set();
@@ -64,15 +59,12 @@ async function rebuildServices() {
 						serviceNameSet.add(portRow.service_name);
 
 						cp.execSync('./rebuildservices.sh ' + portRow.service_name, (error, stdout, stderr) => {
-							// catch err, stdout, stderr
 							if (error) {
 								console.log('Error in removing files');
-								// return;
 							}
 							if (stderr) {
-								console.log('has stderr output');
+								console.log('Has stderr output');
 								console.log(stderr);
-								// return;
 							}
 						});
 					} else {

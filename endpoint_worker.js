@@ -1,4 +1,4 @@
-const {parentPort, workerData} = require("worker_threads");
+const { parentPort, workerData } = require("worker_threads");
 var cp = require('child_process');
 var fs = require('fs');
 const path = require('path');
@@ -12,7 +12,7 @@ const pool = mariadb.createPool({
 	database: 'cleanbase'
 });
 
-const {filePath, fileName} = workerData;
+const { filePath, fileName } = workerData;
 
 async function stopContainer(port) {
 	if (!port || port < 3000) {
@@ -20,15 +20,13 @@ async function stopContainer(port) {
 	}
 
 	cp.execSync('./stopcontainer.sh ' + port, (error, stdout, stderr) => {
-		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
 			return;
 		}
 		if (stderr) {
-			console.log('has stderr output');
+			console.log('Has stderr output');
 			console.log(stderr);
-			// return;
 		}
 
 		return;
@@ -37,8 +35,9 @@ async function stopContainer(port) {
 
 async function runStoppedContainers() {
 	try {
-		fs.unlinkSync('runningports.txt');
-		//file removed
+		if (fs.existsSync('runningports.txt')) {
+			fs.unlinkSync('runningports.txt');
+		}
 	} catch (err) {
 		console.error(err);
 	}
@@ -46,27 +45,21 @@ async function runStoppedContainers() {
 	console.log('Run stopped containers after removing file');
 
 	cp.exec('./removestopped.sh', (error, stdout, stderr) => {
-		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
-			// return;
 		}
 		if (stderr) {
-			console.log('has stderr output');
+			console.log('Has stderr output');
 			console.log(stderr);
-			// return;
 		}
 
 		cp.exec('./runstopped.sh', async (error, stdout, stderr) => {
-			// catch err, stdout, stderr
 			if (error) {
 				console.log('Error in removing files');
-				// return;
 			}
 			if (stderr) {
-				console.log('has stderr output');
+				console.log('Has stderr output');
 				console.log(stderr);
-				// return;
 			}
 
 			const runningSet = new Set();
@@ -95,19 +88,15 @@ async function runStoppedContainers() {
 						if (!runningSet.has(toRun)) {
 							cp.exec('./restartstopped.sh ' + portRow.service_name + portRow.service_endpoint + ':1.0 ' + toRun
 								+ ' ' + portRow.service_name, (error, stdout, stderr) => {
-									// catch err, stdout, stderr
 									if (error) {
 										console.log('Error in removing files');
-										// return;
 									}
 									if (stderr) {
-										console.log('has stderr output');
+										console.log('Has stderr output');
 										console.log(stderr);
-										// return;
 									}
 
-									//endpointReadyMap.set(portRow.service_endpoint, true);
-									parentPort.postMessage({endpointSegment: portRow.service_endpoint, ready: true});
+									parentPort.postMessage({ endpointSegment: portRow.service_endpoint, ready: true });
 								});
 						}
 
@@ -131,15 +120,13 @@ const endpointSegment = tokens[1];
 
 cp.exec('./endpoint.sh ' + (serviceSegment + '_' + endpointSegment + '_build.zip') + ' ' + (serviceSegment + endpointSegment),
 	async (error, stdout, stderr) => {
-		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
 			return;
 		}
 		if (stderr) {
-			console.log('has stderr output');
+			console.log('Has stderr output');
 			console.log(stderr);
-			// return;
 		}
 
 		let conn;
@@ -160,8 +147,7 @@ cp.exec('./endpoint.sh ' + (serviceSegment + '_' + endpointSegment + '_build.zip
 				return;
 			}
 
-			parentPort.postMessage({endpointSegment, ready: false});
-			//endpointReadyMap.set(endpointSegment, false);
+			parentPort.postMessage({ endpointSegment, ready: false });
 
 			await stopContainer(port);
 			await runStoppedContainers();

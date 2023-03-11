@@ -22,15 +22,13 @@ async function stopContainer(port) {
 	}
 
 	cp.execSync('./stopcontainer.sh ' + port, (error, stdout, stderr) => {
-		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
 			return;
 		}
 		if (stderr) {
-			console.log('has stderr output');
+			console.log('Has stderr output');
 			console.log(stderr);
-			// return;
 		}
 
 		return;
@@ -40,36 +38,30 @@ async function stopContainer(port) {
 
 async function runStoppedContainers() {
 	try {
-		fs.unlinkSync('runningports.txt');
-		//file removed
+		if (fs.existsSync('runningports.txt')) {
+			fs.unlinkSync('runningports.txt');
+		}
 	} catch (err) {
-		// console.error(err);
 	}
 
 	console.log('Run stopped containers after removing file');
 
 	cp.exec('./removestopped.sh', (error, stdout, stderr) => {
-		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
-			// return;
 		}
 		if (stderr) {
-			console.log('has stderr output');
+			console.log('Has stderr output');
 			console.log(stderr);
-			// return;
 		}
 
 		cp.exec('./runstopped.sh', async (error, stdout, stderr) => {
-			// catch err, stdout, stderr
 			if (error) {
 				console.log('Error in removing files');
-				// return;
 			}
 			if (stderr) {
-				console.log('has stderr output');
+				console.log('Has stderr output');
 				console.log(stderr);
-				// return;
 			}
 
 			const runningSet = new Set();
@@ -99,18 +91,15 @@ async function runStoppedContainers() {
 					portsToRun.forEach(portRow => {
 						const toRun = portRow.service_port;
 
-						if (!runningSet.has(toRun)) {				
+						if (!runningSet.has(toRun)) {
 							cp.exec('./restartstopped.sh ' + portRow.service_name + portRow.service_endpoint + ':1.0 ' + toRun
 								+ ' ' + portRow.service_name, (error, stdout, stderr) => {
-									// catch err, stdout, stderr
 									if (error) {
 										console.log('Error in removing files');
-										// return;
 									}
 									if (stderr) {
-										console.log('has stderr output');
+										console.log('Has stderr output');
 										console.log(stderr);
-										// return;
 									}
 
 									toStartCount--;
@@ -138,21 +127,17 @@ async function runStoppedContainers() {
 async function rebuildAllAndRun() {
 	try {
 		fs.unlinkSync('buildlist.txt');
-		// file removed
 	} catch (err) {
-		// console.error(err);
 	}
 
 	cp.exec('./listbuilds.sh', async (error, stdout, stderr) => {
-		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
 			return;
 		}
 		if (stderr) {
-			console.log('has stderr output');
+			console.log('Has stderr output');
 			console.log(stderr);
-			// return;
 		}
 
 		const buildSet = new Set();
@@ -164,7 +149,6 @@ async function rebuildAllAndRun() {
 			}
 		});
 
-		// iterate through each file path and extract them
 		buildSet.forEach(buildName => {
 			const zipName = buildName;
 			const tokens = zipName.split('_');
@@ -173,17 +157,15 @@ async function rebuildAllAndRun() {
 
 			cp.exec('./endpoint.sh ' + (serviceSegment + '_' + endpointSegment + '_build.zip') + ' ' + (serviceSegment + endpointSegment),
 				async (error, stdout, stderr) => {
-					// catch err, stdout, stderr
 					if (error) {
 						console.log('Error in removing files');
 						return;
 					}
 					if (stderr) {
-						console.log('has stderr output');
+						console.log('Has stderr output');
 						console.log(stderr);
-						// return;
 					}
-					
+
 					let conn;
 					try {
 						conn = await pool.getConnection();
@@ -210,7 +192,7 @@ async function rebuildAllAndRun() {
 					}
 				});
 		});
-		
+
 		await runStoppedContainers();
 
 		return;

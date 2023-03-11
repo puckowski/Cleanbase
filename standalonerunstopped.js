@@ -13,36 +13,30 @@ const pool = mariadb.createPool({
 
 async function runStoppedContainers() {
 	try {
-		fs.unlinkSync('runningports.txt');
-		// file removed
+		if (fs.existsSync('runningports.txt')) {
+			fs.unlinkSync('runningports.txt');
+		}
 	} catch (err) {
-		// console.error(err);
 	}
 
 	console.log('Run stopped containers after removing file');
 
 	cp.exec('./removestopped.sh', (error, stdout, stderr) => {
-		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
-			// return;
 		}
 		if (stderr) {
-			console.log('has stderr output');
+			console.log('Has stderr output');
 			console.log(stderr);
-			// return;
 		}
 
 		cp.exec('./runstopped.sh', async (error, stdout, stderr) => {
-			// catch err, stdout, stderr
 			if (error) {
 				console.log('Error in removing files');
-				// return;
 			}
 			if (stderr) {
-				console.log('has stderr output');
+				console.log('Has stderr output');
 				console.log(stderr);
-				// return;
 			}
 
 			const runningSet = new Set();
@@ -71,15 +65,12 @@ async function runStoppedContainers() {
 						if (!runningSet.has(toRun)) {
 							cp.execSync('./restartstopped.sh ' + portRow.service_name + portRow.service_endpoint + ':1.0 ' + toRun
 								+ ' ' + portRow.service_name, (error, stdout, stderr) => {
-									// catch err, stdout, stderr
 									if (error) {
 										console.log('Error in removing files');
-										// return;
 									}
 									if (stderr) {
-										console.log('has stderr output');
+										console.log('Has stderr output');
 										console.log(stderr);
-										// return;
 									}
 								});
 						}

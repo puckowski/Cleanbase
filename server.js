@@ -13,7 +13,7 @@ const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS, ENDPO
 const proxy = httpProxy.createProxy({ secure: false, proxyTimeout: ENDPOINT_RESPONSE_MILLISECONDS });
 
 proxy.on('error', (err, req, res) => {
-	res.writeHead(405, { 'Content-Type': 'text/plain' });
+	res.writeHead(408, { 'Content-Type': 'text/plain' });
 	res.end('Timeout\n');
 });
 
@@ -42,7 +42,6 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 	const startDate = new Date();
 
 	const form = new formidable.IncomingForm();
-	// file size limit 50MB. change according to your needs
 	form.maxFileSize = ENDPOINT_ZIP_MAX_MEGABYTES * 1024 * 1024;
 	form.keepExtensions = true;
 	form.multiples = true;
@@ -50,14 +49,13 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 
 	let nameMap = new Map();
 
-	// collect all form files and fileds and pass to its callback
 	form.parse(req, async (err, fields, files) => {
-		// when form parsing fails throw error
 		if (err) {
-			// return res.status(500).json({ error: err });
-			res.writeHead(200, { 'Content-Type': 'text/plain' });
+			res.writeHead(500, { 'Content-Type': 'text/plain' });
 			res.end('error\n');
+
 			console.log(err);
+
 			return null;
 		}
 
@@ -82,9 +80,9 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 
 		// if uploaded files are not zip files, return error
 		if (!validFiles) {
-			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end('unsupported file type!\n');
-			console.log('unsupported file type');
+			res.writeHead(500, { 'Content-Type': 'text/plain' });
+			res.end('unsupported file type\n');
+			
 			return null;
 		}
 
@@ -119,7 +117,7 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 							]);
 						}
 
-						res.writeHead(200, { 'Content-Type': 'text/plain' });
+						res.writeHead(500, { 'Content-Type': 'text/plain' });
 						res.end('error\n');
 						return null;
 					}
@@ -131,7 +129,6 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 			}
 		}
 
-		// res.status(200).json({ uploaded: true });
 		res.writeHead(200, { 'Content-Type': 'text/plain' });
 		res.end('uploaded\n');
 
@@ -154,7 +151,7 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 					const endpointSegment = msg.endpointSegment;
 					const ready = msg.ready;
 					endpointReadyMap.set(endpointSegment, ready);
-					console.log('main thread: ' + endpointSegment + ': ' + ready);
+					console.log('Main thread: ' + endpointSegment + ': ' + ready);
 				}
 			});
 		});
@@ -166,7 +163,6 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 	const serviceSegment = url_parts[1];
 	const endpointSegment = url_parts[2];
 
-	// runs when new file detected in upload stream
 	form.on('fileBegin', function (name, file) {
 		file.path = path.join(uploadDir, serviceSegment + '_' + endpointSegment + '_build.zip');
 		file.newFilename = serviceSegment + '_' + endpointSegment + '_build.zip';
@@ -176,9 +172,7 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 
 		try {
 			fs.unlinkSync(file.filepath);
-			// file removed
 		} catch (err) {
-			// console.error(err);
 		}
 	});
 }
@@ -193,23 +187,19 @@ async function createService(serviceName, servicePassword, superuserId) {
 		]);
 
 		if (rows.length === 0) {
-			// generate salt to hash password
 			const salt = await bcrypt.genSalt(10);
-			// now we set user password to hashed password
 			const hashedPass = await bcrypt.hash(servicePassword, salt);
 
 			const res = await conn.query("INSERT INTO tbl_service (service_name, service_password, superuser_id) VALUES (?, ?, ?)", [serviceName, hashedPass, superuserId]);
 
 			cp.exec('./createservice.sh ' + serviceName + ' ' + servicePassword, (error, stdout, stderr) => {
-				// catch err, stdout, stderr
 				if (error) {
 					console.log('Error in removing files');
 					return;
 				}
 				if (stderr) {
-					console.log('has stderr output');
+					console.log('Has stderr output');
 					console.log(stderr);
-					// return;
 				}
 
 				serviceReadyMap.set(serviceName, true);
@@ -394,7 +384,7 @@ async function restartEndpoint(req, res, postBody) {
 							const endpointSegment = msg.endpointSegment;
 							const ready = msg.ready;
 							endpointReadyMap.set(endpointSegment, ready);
-							console.log('main thread: ' + endpointSegment + ': ' + ready);
+							console.log('Main thread: ' + endpointSegment + ': ' + ready);
 						}
 					});
 				}
@@ -474,9 +464,7 @@ async function addUser(req, postBody) {
 			]);
 
 			if (existingRows.length == 0) {
-				// generate salt to hash password
 				const salt = await bcrypt.genSalt(10);
-				// now we set user password to hashed password
 				const hashedPass = await bcrypt.hash(userPass, salt);
 
 				const res = await conn.query("INSERT INTO tbl_user (user_name, user_password, service_id, user_level) VALUES (?, ?, ?, ?)", [
@@ -549,9 +537,7 @@ async function updateUser(req, postBody) {
 				const validPassword = await bcrypt.compare(userPass, existingRows[0].user_password);
 				if (validPassword) {
 					if (newPass.length >= 6 && newPass.length <= 32) {
-						// generate salt to hash password
 						const salt = await bcrypt.genSalt(10);
-						// now we set user password to hashed password
 						const hashedPass = await bcrypt.hash(newPass, salt);
 
 						const res = await conn.query("UPDATE tbl_user SET user_password = ? WHERE user_name = ? AND id = ?", [
@@ -622,9 +608,7 @@ async function resetUser(req, postBody) {
 
 			if (existingRows.length === 1 && existingRows[0].id && existingRows[0].id > 0) {
 				if (newPass.length >= 6 && newPass.length <= 32) {
-					// generate salt to hash password
 					const salt = await bcrypt.genSalt(10);
-					// now we set user password to hashed password
 					const hashedPass = await bcrypt.hash(newPass, salt);
 
 					const res = await conn.query("UPDATE tbl_user SET user_password = ? WHERE user_name = ? AND id = ?", [
@@ -725,9 +709,7 @@ async function addSuperuser(req, postBody) {
 			const usernameFormatted = username.replace(/[^a-z0-9]/gi, '');
 
 			if (usernameFormatted === username && username.length >= 6 && username.length <= 32 && userPass.length >= 6 && userPass.length <= 32) {
-				// generate salt to hash password
 				const salt = await bcrypt.genSalt(10);
-				// now we set user password to hashed password
 				const hashedPass = await bcrypt.hash(userPass, salt);
 
 				const res = await conn.query("INSERT INTO tbl_superuser (user_name, user_password, is_active) VALUES (?, ?, ?)", [
@@ -891,11 +873,9 @@ async function validateJwt(req, postBody) {
 			payload = jwt.verify(postBody.jwt, postBody.key);
 		} catch (jwtErr) {
 			if (jwtErr instanceof jwt.JsonWebTokenError) {
-				// If the error thrown is because the JWT is unauthorized, return a 401 error
 				return;
 			}
 
-			// Otherwise, return a bad request error
 			return;
 		}
 
@@ -916,7 +896,6 @@ async function runStoppedContainers() {
 		if (fs.existsSync('runningports.txt')) {
 			fs.unlinkSync('runningports.txt');
 		}
-		//file removed
 	} catch (err) {
 		console.error(err);
 	}
@@ -924,27 +903,21 @@ async function runStoppedContainers() {
 	console.log('Run stopped containers after removing file');
 
 	cp.exec('./removestopped.sh', (error, stdout, stderr) => {
-		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
-			// return;
 		}
 		if (stderr) {
-			console.log('has stderr output');
+			console.log('Has stderr output');
 			console.log(stderr);
-			// return;
 		}
 
 		cp.exec('./runstopped.sh', async (error, stdout, stderr) => {
-			// catch err, stdout, stderr
 			if (error) {
 				console.log('Error in removing files');
-				// return;
 			}
 			if (stderr) {
-				console.log('has stderr output');
+				console.log('Has stderr output');
 				console.log(stderr);
-				// return;
 			}
 
 			const runningSet = new Set();
@@ -973,15 +946,12 @@ async function runStoppedContainers() {
 						if (!runningSet.has(toRun)) {
 							cp.exec('./restartstopped.sh ' + portRow.service_name + portRow.service_endpoint + ':1.0 ' + toRun
 								+ ' ' + portRow.service_name, (error, stdout, stderr) => {
-									// catch err, stdout, stderr
 									if (error) {
 										console.log('Error in removing files');
-										// return;
 									}
 									if (stderr) {
-										console.log('has stderr output');
+										console.log('Has stderr output');
 										console.log(stderr);
-										// return;
 									}
 
 									endpointReadyMap.set(portRow.service_endpoint, true);
@@ -1007,15 +977,13 @@ async function stopContainer(port) {
 	}
 
 	cp.execSync('./stopcontainer.sh ' + port, (error, stdout, stderr) => {
-		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
 			return;
 		}
 		if (stderr) {
-			console.log('has stderr output');
+			console.log('Has stderr output');
 			console.log(stderr);
-			// return;
 		}
 
 		return;
@@ -1080,21 +1048,17 @@ async function isServiceReady(postBody) {
 async function loadReadyServices() {
 	try {
 		fs.unlinkSync('readyservices.txt');
-		// file removed
 	} catch (err) {
-		// console.error(err);
 	}
 
 	cp.exec('./isserviceready.sh', (error, stdout, stderr) => {
-		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
 			return;
 		}
 		if (stderr) {
-			console.log('has stderr output');
+			console.log('Has stderr output');
 			console.log(stderr);
-			// return;
 		}
 
 		const allFileContents = fs.readFileSync('readyservices.txt', 'utf-8');
@@ -1119,21 +1083,17 @@ async function loadReadyEndpoints() {
 		if (fs.existsSync('runningports.txt')) {
 			fs.unlinkSync('runningports.txt');
 		}
-		// file removed
 	} catch (err) {
-		// console.error(err);
 	}
 
 	cp.exec('./runstopped.sh', async (error, stdout, stderr) => {
-		// catch err, stdout, stderr
 		if (error) {
 			console.log('Error in removing files');
 			return;
 		}
 		if (stderr) {
-			console.log('has stderr output');
+			console.log('Has stderr output');
 			console.log(stderr);
-			// return;
 		}
 
 		const runningSet = new Set();
@@ -1190,13 +1150,13 @@ https.createServer(serverOptions, async function (req, res) {
 		const bearer = req.headers['authorization'];
 		if (!bearer || !bearer.includes('Bearer ')) {
 			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('Invalid or error 1\n');
+			res.end('unauthorized\n');
 			return;
 		}
 		const token = bearer.substring(bearer.indexOf(' ') + 1, bearer.length);
 		if (!token) {
 			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('Invalid or error 2\n');
+			res.end('unauthorized\n');
 			return;
 		}
 
@@ -1205,25 +1165,24 @@ https.createServer(serverOptions, async function (req, res) {
 			payload = jwt.verify(token, jwtKey)
 		} catch (jwtErr) {
 			if (jwtErr instanceof jwt.JsonWebTokenError) {
-				// If the error thrown is because the JWT is unauthorized, return a 401 error
 				res.writeHead(401, { 'Content-Type': 'text/plain' });
-				res.end('Invalid or error\n');
+				res.end('unauthorized\n');
 				return;
 			}
 
-			// Otherwise, return a bad request error
 			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('Invalid or error\n');
+			res.end('unauthorized\n');
 			return;
 		}
 
 		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
 		let body = '';
 		req.on('data', chunk => {
-			body += chunk.toString(); // convert Buffer to string
+			body += chunk.toString();
 		});
 
 		req.on('end', () => {
+			res.writeHead(200, { 'Content-Type': 'text/plain' });
 			res.end('queued');
 
 			const bodyJson = JSON.parse(body);
@@ -1241,13 +1200,13 @@ https.createServer(serverOptions, async function (req, res) {
 		const bearer = req.headers['authorization'];
 		if (!bearer || !bearer.includes('Bearer ')) {
 			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('Invalid or error\n');
+			res.end('unauthorized\n');
 			return;
 		}
 		const token = bearer.substring(bearer.indexOf(' ') + 1, bearer.length);
 		if (!token) {
 			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('Invalid or error\n');
+			res.end('unauthorized\n');
 			return;
 		}
 
@@ -1256,15 +1215,13 @@ https.createServer(serverOptions, async function (req, res) {
 			payload = jwt.verify(token, jwtKey)
 		} catch (jwtErr) {
 			if (jwtErr instanceof jwt.JsonWebTokenError) {
-				// If the error thrown is because the JWT is unauthorized, return a 401 error
 				res.writeHead(401, { 'Content-Type': 'text/plain' });
-				res.end('Invalid or error\n');
+				res.end('unauthorized\n');
 				return;
 			}
 
-			// Otherwise, return a bad request error
 			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('Invalid or error\n');
+			res.end('unauthorized\n');
 			return;
 		}
 
@@ -1274,20 +1231,20 @@ https.createServer(serverOptions, async function (req, res) {
 		if (port) {
 			uploadMedia(req, res, true);
 		} else {
-			res.writeHead(405, { 'Content-Type': 'text/plain' });
-			res.end('Invalid or error\n');
+			res.writeHead(500, { 'Content-Type': 'text/plain' });
+			res.end('error\n');
 		}
 	} else if (req.method === 'POST' && firstSegment === 'removeendpoint') {
 		const bearer = req.headers['authorization'];
 		if (!bearer || !bearer.includes('Bearer ')) {
 			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('Invalid or error\n');
+			res.end('unauthorized\n');
 			return;
 		}
 		const token = bearer.substring(bearer.indexOf(' ') + 1, bearer.length);
 		if (!token) {
 			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('Invalid or error\n');
+			res.end('unauthorized\n');
 			return;
 		}
 
@@ -1296,25 +1253,21 @@ https.createServer(serverOptions, async function (req, res) {
 			payload = jwt.verify(token, jwtKey)
 		} catch (jwtErr) {
 			if (jwtErr instanceof jwt.JsonWebTokenError) {
-				// If the error thrown is because the JWT is unauthorized, return a 401 error
 				res.writeHead(401, { 'Content-Type': 'text/plain' });
-				res.end('Invalid or error\n');
+				res.end('unauthorized\n');
 				return;
 			}
 
-			// Otherwise, return a bad request error
 			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('Invalid or error\n');
+			res.end('unauthorized\n');
 			return;
 		}
 
 		let body = '';
 		req.on('data', chunk => {
-			body += chunk.toString(); // convert Buffer to string
+			body += chunk.toString();
 		});
 		req.on('end', async () => {
-			res.end('queued');
-
 			const bodyJson = JSON.parse(body);
 
 			req.url = req.url.replace('removeendpoint/', '');
@@ -1327,13 +1280,13 @@ https.createServer(serverOptions, async function (req, res) {
 		const bearer = req.headers['authorization'];
 		if (!bearer || !bearer.includes('Bearer ')) {
 			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('Invalid or error\n');
+			res.end('unauthorized\n');
 			return;
 		}
 		const token = bearer.substring(bearer.indexOf(' ') + 1, bearer.length);
 		if (!token) {
 			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('Invalid or error\n');
+			res.end('unauthorized\n');
 			return;
 		}
 
@@ -1342,25 +1295,21 @@ https.createServer(serverOptions, async function (req, res) {
 			payload = jwt.verify(token, jwtKey)
 		} catch (jwtErr) {
 			if (jwtErr instanceof jwt.JsonWebTokenError) {
-				// If the error thrown is because the JWT is unauthorized, return a 401 error
 				res.writeHead(401, { 'Content-Type': 'text/plain' });
-				res.end('Invalid or error\n');
+				res.end('unauthorized\n');
 				return;
 			}
 
-			// Otherwise, return a bad request error
 			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('Invalid or error\n');
+			res.end('unauthorized\n');
 			return;
 		}
 
 		let body = '';
 		req.on('data', chunk => {
-			body += chunk.toString(); // convert Buffer to string
+			body += chunk.toString();
 		});
 		req.on('end', async () => {
-			res.end('queued');
-
 			const bodyJson = JSON.parse(body);
 
 			req.url = req.url.replace('restartendpoint/', '');
@@ -1373,13 +1322,13 @@ https.createServer(serverOptions, async function (req, res) {
 		const bearer = req.headers['authorization'];
 		if (!bearer || !bearer.includes('Bearer ')) {
 			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('Invalid or error\n');
+			res.end('unauthorized\n');
 			return;
 		}
 		const token = bearer.substring(bearer.indexOf(' ') + 1, bearer.length);
 		if (!token) {
 			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('Invalid or error\n');
+			res.end('unauthorized\n');
 			return;
 		}
 
@@ -1388,15 +1337,13 @@ https.createServer(serverOptions, async function (req, res) {
 			payload = jwt.verify(token, jwtKey)
 		} catch (jwtErr) {
 			if (jwtErr instanceof jwt.JsonWebTokenError) {
-				// If the error thrown is because the JWT is unauthorized, return a 401 error
 				res.writeHead(401, { 'Content-Type': 'text/plain' });
-				res.end('Invalid or error\n');
+				res.end('unauthorized\n');
 				return;
 			}
 
-			// Otherwise, return a bad request error
 			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('Invalid or error\n');
+			res.end('unauthorized\n');
 			return;
 		}
 
@@ -1409,7 +1356,7 @@ https.createServer(serverOptions, async function (req, res) {
 		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
 		let body = '';
 		req.on('data', chunk => {
-			body += chunk.toString(); // convert Buffer to string
+			body += chunk.toString();
 		});
 		req.on('end', async () => {
 			const bodyJson = JSON.parse(body);
@@ -1423,7 +1370,7 @@ https.createServer(serverOptions, async function (req, res) {
 		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
 		let body = '';
 		req.on('data', chunk => {
-			body += chunk.toString(); // convert Buffer to string
+			body += chunk.toString();
 		});
 		req.on('end', async () => {
 			const bodyJson = JSON.parse(body);
@@ -1437,7 +1384,7 @@ https.createServer(serverOptions, async function (req, res) {
 		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
 		let body = '';
 		req.on('data', chunk => {
-			body += chunk.toString(); // convert Buffer to string
+			body += chunk.toString();
 		});
 		req.on('end', async () => {
 			const bodyJson = JSON.parse(body);
@@ -1451,7 +1398,7 @@ https.createServer(serverOptions, async function (req, res) {
 		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
 		let body = '';
 		req.on('data', chunk => {
-			body += chunk.toString(); // convert Buffer to string
+			body += chunk.toString();
 		});
 		req.on('end', async () => {
 			const bodyJson = JSON.parse(body);
@@ -1465,7 +1412,7 @@ https.createServer(serverOptions, async function (req, res) {
 		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
 		let body = '';
 		req.on('data', chunk => {
-			body += chunk.toString(); // convert Buffer to string
+			body += chunk.toString();
 		});
 		req.on('end', async () => {
 			const bodyJson = JSON.parse(body);
@@ -1479,7 +1426,7 @@ https.createServer(serverOptions, async function (req, res) {
 		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
 		let body = '';
 		req.on('data', chunk => {
-			body += chunk.toString(); // convert Buffer to string
+			body += chunk.toString();
 		});
 		req.on('end', async () => {
 			const bodyJson = JSON.parse(body);
@@ -1498,7 +1445,7 @@ https.createServer(serverOptions, async function (req, res) {
 		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
 		let body = '';
 		req.on('data', chunk => {
-			body += chunk.toString(); // convert Buffer to string
+			body += chunk.toString();
 		});
 		req.on('end', async () => {
 			const bodyJson = JSON.parse(body);
@@ -1517,7 +1464,7 @@ https.createServer(serverOptions, async function (req, res) {
 		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
 		let body = '';
 		req.on('data', chunk => {
-			body += chunk.toString(); // convert Buffer to string
+			body += chunk.toString();
 		});
 		req.on('end', async () => {
 			const bodyJson = JSON.parse(body);
@@ -1536,7 +1483,7 @@ https.createServer(serverOptions, async function (req, res) {
 		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
 		let body = '';
 		req.on('data', chunk => {
-			body += chunk.toString(); // convert Buffer to string
+			body += chunk.toString();
 		});
 		req.on('end', async () => {
 			const bodyJson = JSON.parse(body);
@@ -1550,7 +1497,7 @@ https.createServer(serverOptions, async function (req, res) {
 		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
 		let body = '';
 		req.on('data', chunk => {
-			body += chunk.toString(); // convert Buffer to string
+			body += chunk.toString();
 		});
 		req.on('end', async () => {
 			const bodyJson = JSON.parse(body);
@@ -1566,8 +1513,8 @@ https.createServer(serverOptions, async function (req, res) {
 		const truthyIfProxied = await executeEndpoint(firstSegment, secondSegment, req, res);
 
 		if (!truthyIfProxied) {
-			res.writeHead(405, { 'Content-Type': 'text/plain' });
-			res.end('Invalid or error\n');
+			res.writeHead(500, { 'Content-Type': 'text/plain' });
+			res.end('error\n');
 		}
 	}
 }).listen(443, '0.0.0.0');
