@@ -21,7 +21,7 @@ async function runStoppedContainers() {
 
 	console.log('Run stopped containers after removing file');
 
-	cp.exec('./removestopped.sh', (error, stdout, stderr) => {
+	cp.exec('./scripts/removestopped.sh', (error, stdout, stderr) => {
 		if (error) {
 			console.log('Error in removing files');
 		}
@@ -30,7 +30,7 @@ async function runStoppedContainers() {
 			console.log(stderr);
 		}
 
-		cp.exec('./runstopped.sh', async (error, stdout, stderr) => {
+		cp.exec('./scripts/runstopped.sh', async (error, stdout, stderr) => {
 			if (error) {
 				console.log('Error in removing files');
 			}
@@ -63,7 +63,7 @@ async function runStoppedContainers() {
 						const toRun = portRow.service_port;
 
 						if (!runningSet.has(toRun)) {
-							cp.execSync('./restartstopped.sh ' + portRow.service_name + portRow.service_endpoint + ':1.0 ' + toRun
+							cp.execSync('./scripts/restartstopped.sh ' + portRow.service_name + portRow.service_endpoint + ':1.0 ' + toRun
 								+ ' ' + portRow.service_name, (error, stdout, stderr) => {
 									if (error) {
 										console.log('Error in removing files');

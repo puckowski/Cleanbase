@@ -2,7 +2,7 @@ FROM node:current-alpine3.15
 
 ARG FileZip
 COPY ${FileZip} /build.zip
-COPY zip_safety.sh /zip_safety.sh
+COPY scripts/zip_safety.sh /zip_safety.sh
 
 WORKDIR /
 

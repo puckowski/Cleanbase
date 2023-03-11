@@ -3,7 +3,7 @@ var cp = require('child_process');
 var fs = require('fs');
 const path = require('path');
 const mariadb = require('mariadb');
-const { DATABASE_PASSWORD } = require("./constants");
+const { DATABASE_PASSWORD } = require("../constants");
 const pool = mariadb.createPool({
 	host: 'localhost',
 	user: 'root',
@@ -19,7 +19,7 @@ async function stopContainer(port) {
 		return;
 	}
 
-	cp.execSync('./stopcontainer.sh ' + port, (error, stdout, stderr) => {
+	cp.execSync('./scripts/stopcontainer.sh ' + port, (error, stdout, stderr) => {
 		if (error) {
 			console.log('Error in removing files');
 			return;
@@ -44,7 +44,7 @@ async function runStoppedContainers() {
 
 	console.log('Run stopped containers after removing file');
 
-	cp.exec('./removestopped.sh', (error, stdout, stderr) => {
+	cp.exec('./scripts/removestopped.sh', (error, stdout, stderr) => {
 		if (error) {
 			console.log('Error in removing files');
 		}
@@ -53,7 +53,7 @@ async function runStoppedContainers() {
 			console.log(stderr);
 		}
 
-		cp.exec('./runstopped.sh', async (error, stdout, stderr) => {
+		cp.exec('./scripts/runstopped.sh', async (error, stdout, stderr) => {
 			if (error) {
 				console.log('Error in removing files');
 			}
@@ -86,7 +86,7 @@ async function runStoppedContainers() {
 						const toRun = portRow.service_port;
 
 						if (!runningSet.has(toRun)) {
-							cp.exec('./restartstopped.sh ' + portRow.service_name + portRow.service_endpoint + ':1.0 ' + toRun
+							cp.exec('./scripts/restartstopped.sh ' + portRow.service_name + portRow.service_endpoint + ':1.0 ' + toRun
 								+ ' ' + portRow.service_name, (error, stdout, stderr) => {
 									if (error) {
 										console.log('Error in removing files');
@@ -118,7 +118,7 @@ const tokens = zipName.split('_');
 const serviceSegment = tokens[0];
 const endpointSegment = tokens[1];
 
-cp.exec('./endpoint.sh ' + (serviceSegment + '_' + endpointSegment + '_build.zip') + ' ' + (serviceSegment + endpointSegment),
+cp.exec('./scripts/endpoint.sh ' + (serviceSegment + '_' + endpointSegment + '_build.zip') + ' ' + (serviceSegment + endpointSegment),
 	async (error, stdout, stderr) => {
 		if (error) {
 			console.log('Error in removing files');

@@ -13,7 +13,7 @@ if (!port || port < 3000) {
     return;
 }
 
-cp.execSync('./stopcontainer.sh ' + port, (error, stdout, stderr) => {
+cp.execSync('./scripts/stopcontainer.sh ' + port, (error, stdout, stderr) => {
     if (error) {
         console.log('Error in removing files');
         return;

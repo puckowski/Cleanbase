@@ -44,7 +44,7 @@ sudo node server.js
 Reboot cron job should automatically restart services. If reboot cron job fails, in a terminal, run the following command:
 
 ```
-./rebuildall.sh
+./scripts/rebuildall.sh
 ```
 
 ## Backups

@@ -58,7 +58,7 @@ sudo echo "deb [trusted=yes arch=amd64] https://download.konghq.com/insomnia-ubu
 sudo apt-get update
 sudo apt-get install insomnia
 
-sudo ./initcron.sh
-sudo cp changepass.sh /
+sudo ./scripts/initcron.sh
+sudo cp ./scripts/changepass.sh /
     
 echo "Finish setup... reboot when ready"

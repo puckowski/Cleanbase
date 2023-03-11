@@ -3,7 +3,7 @@ const { parentPort, workerData } = require("worker_threads");
 var cp = require('child_process');
 var fs = require('fs');
 const mariadb = require('mariadb');
-const { DATABASE_PASSWORD } = require("./constants");
+const { DATABASE_PASSWORD } = require("../constants");
 const pool = mariadb.createPool({
     host: 'localhost',
     user: 'root',
@@ -12,13 +12,15 @@ const pool = mariadb.createPool({
     database: 'cleanbase'
 });
 
-const { port } = workerData;
+const { port, endpointSegment } = workerData;
 
 if (!port || port < 3000) {
     return;
 }
 
-cp.execSync('./stopcontainer.sh ' + port, (error, stdout, stderr) => {
+parentPort.postMessage({ endpointSegment, ready: false });
+
+cp.execSync('./scripts/stopcontainer.sh ' + port, (error, stdout, stderr) => {
     if (error) {
         console.log('Error in removing files');
         return;
@@ -39,7 +41,7 @@ try {
     console.error(err);
 }
 
-cp.exec('./removestopped.sh', (error, stdout, stderr) => {
+cp.exec('./scripts/removestopped.sh', (error, stdout, stderr) => {
     if (error) {
         console.log('Error in removing files');
     }
@@ -48,7 +50,7 @@ cp.exec('./removestopped.sh', (error, stdout, stderr) => {
         console.log(stderr);
     }
 
-    cp.exec('./runstopped.sh', async (error, stdout, stderr) => {
+    cp.exec('./scripts/runstopped.sh', async (error, stdout, stderr) => {
         if (error) {
             console.log('Error in removing files');
         }
@@ -81,7 +83,7 @@ cp.exec('./removestopped.sh', (error, stdout, stderr) => {
                     const toRun = portRow.service_port;
 
                     if (!runningSet.has(toRun)) {
-                        cp.exec('./restartstopped.sh ' + portRow.service_name + portRow.service_endpoint + ':1.0 ' + toRun
+                        cp.exec('./scripts/restartstopped.sh ' + portRow.service_name + portRow.service_endpoint + ':1.0 ' + toRun
                             + ' ' + portRow.service_name, (error, stdout, stderr) => {
                                 if (error) {
                                     console.log('Error in removing files');

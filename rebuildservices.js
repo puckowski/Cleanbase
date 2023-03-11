@@ -20,7 +20,7 @@ async function rebuildServices() {
 	} catch (err) {
 	}
 
-	cp.exec('./isserviceready.sh', async (error, stdout, stderr) => {
+	cp.exec('./scripts/isserviceready.sh', async (error, stdout, stderr) => {
 		if (error) {
 			console.log('Error in removing files');
 		}
@@ -58,7 +58,7 @@ async function rebuildServices() {
 					if (!runningSet.has(toRun) && !serviceNameSet.has(portRow.service_name)) {
 						serviceNameSet.add(portRow.service_name);
 
-						cp.execSync('./rebuildservices.sh ' + portRow.service_name, (error, stdout, stderr) => {
+						cp.execSync('./scripts/rebuildservices.sh ' + portRow.service_name, (error, stdout, stderr) => {
 							if (error) {
 								console.log('Error in removing files');
 							}

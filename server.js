@@ -138,7 +138,7 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 		// iterate through each file path and extract them
 		filesInfo.forEach(({ filePath, fileName }) => {
 			const worker = new Worker(
-				__dirname + "/endpoint_worker.js",
+				__dirname + "/workers/endpoint_worker.js",
 				{
 					workerData: {
 						filePath,
@@ -192,7 +192,7 @@ async function createService(serviceName, servicePassword, superuserId) {
 
 			const res = await conn.query("INSERT INTO tbl_service (service_name, service_password, superuser_id) VALUES (?, ?, ?)", [serviceName, hashedPass, superuserId]);
 
-			cp.exec('./createservice.sh ' + serviceName + ' ' + servicePassword, (error, stdout, stderr) => {
+			cp.exec('./scripts/createservice.sh ' + serviceName + ' ' + servicePassword, (error, stdout, stderr) => {
 				if (error) {
 					console.log('Error in removing files');
 					return;
@@ -311,7 +311,7 @@ async function removeEndpoint(req, res, postBody) {
 					endpointReadyMap.set(endpointSegment, false);
 
 					const worker = new Worker(
-						__dirname + "/remove_endpoint_worker.js",
+						__dirname + "/workers/remove_endpoint_worker.js",
 						{
 							workerData: {
 								endpointSegment,
@@ -372,10 +372,11 @@ async function restartEndpoint(req, res, postBody) {
 					const port = endpointRows[0].service_port;
 
 					const worker = new Worker(
-						__dirname + "/restart_endpoint_worker.js",
+						__dirname + "/workers/restart_endpoint_worker.js",
 						{
 							workerData: {
-								port
+								port,
+								endpointSegment
 							}
 						}
 					);
@@ -902,7 +903,7 @@ async function runStoppedContainers() {
 
 	console.log('Run stopped containers after removing file');
 
-	cp.exec('./removestopped.sh', (error, stdout, stderr) => {
+	cp.exec('./scripts/removestopped.sh', (error, stdout, stderr) => {
 		if (error) {
 			console.log('Error in removing files');
 		}
@@ -911,7 +912,7 @@ async function runStoppedContainers() {
 			console.log(stderr);
 		}
 
-		cp.exec('./runstopped.sh', async (error, stdout, stderr) => {
+		cp.exec('./scripts/runstopped.sh', async (error, stdout, stderr) => {
 			if (error) {
 				console.log('Error in removing files');
 			}
@@ -944,7 +945,7 @@ async function runStoppedContainers() {
 						const toRun = portRow.service_port;
 
 						if (!runningSet.has(toRun)) {
-							cp.exec('./restartstopped.sh ' + portRow.service_name + portRow.service_endpoint + ':1.0 ' + toRun
+							cp.exec('./scripts/restartstopped.sh ' + portRow.service_name + portRow.service_endpoint + ':1.0 ' + toRun
 								+ ' ' + portRow.service_name, (error, stdout, stderr) => {
 									if (error) {
 										console.log('Error in removing files');
@@ -976,7 +977,7 @@ async function stopContainer(port) {
 		return;
 	}
 
-	cp.execSync('./stopcontainer.sh ' + port, (error, stdout, stderr) => {
+	cp.execSync('./scripts/stopcontainer.sh ' + port, (error, stdout, stderr) => {
 		if (error) {
 			console.log('Error in removing files');
 			return;
@@ -1051,7 +1052,7 @@ async function loadReadyServices() {
 	} catch (err) {
 	}
 
-	cp.exec('./isserviceready.sh', (error, stdout, stderr) => {
+	cp.exec('./scripts/isserviceready.sh', (error, stdout, stderr) => {
 		if (error) {
 			console.log('Error in removing files');
 			return;
@@ -1086,7 +1087,7 @@ async function loadReadyEndpoints() {
 	} catch (err) {
 	}
 
-	cp.exec('./runstopped.sh', async (error, stdout, stderr) => {
+	cp.exec('./scripts/runstopped.sh', async (error, stdout, stderr) => {
 		if (error) {
 			console.log('Error in removing files');
 			return;
@@ -1135,8 +1136,8 @@ async function loadReadyEndpoints() {
 }
 
 const serverOptions = {
-	key: fs.readFileSync('key.pem'),
-	cert: fs.readFileSync('cert.pem')
+	key: fs.readFileSync('keys/key.pem'),
+	cert: fs.readFileSync('certificates/cert.pem')
 };
 
 https.createServer(serverOptions, async function (req, res) {
