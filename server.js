@@ -8,7 +8,7 @@ const jwt = require("jsonwebtoken");
 const httpProxy = require('http-proxy');
 const bcrypt = require("bcrypt");
 const { Worker } = require("worker_threads");
-const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS, ENDPOINT_RESPONSE_MILLISECONDS } = require('./constants');
+const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS, ENDPOINT_RESPONSE_MILLISECONDS, JWT_SECRET } = require('./constants');
 
 const proxy = httpProxy.createProxy({ secure: false, proxyTimeout: ENDPOINT_RESPONSE_MILLISECONDS });
 
@@ -17,7 +17,7 @@ proxy.on('error', (err, req, res) => {
 	res.end('Timeout\n');
 });
 
-const jwtKey = "1234567890";
+const jwtKey = JWT_SECRET;
 
 const endpointReadyMap = new Map();
 const serviceReadyMap = new Map();

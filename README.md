@@ -210,6 +210,15 @@ POST body:
 }
 Updates user password forcibly. Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Password must be at least 6 characters and less than 33 characters.
 
+## Version 1.4
+
+- Add guard for zip bombs limiting service zip archives to 250 megabytes uncompressed.
+- Add example build which queries host system.
+- Adjust HTTP status code responses.
+- Adjust console logging.
+- Remove old code comments.
+- Add constant for JWT secret.
+
 ## Version 1.3
 
 - Update dependencies.
