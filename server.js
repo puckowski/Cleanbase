@@ -9,6 +9,9 @@ const httpProxy = require('http-proxy');
 const bcrypt = require("bcrypt");
 const { Worker } = require("worker_threads");
 const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS, ENDPOINT_RESPONSE_MILLISECONDS, JWT_SECRET } = require('./constants');
+const RateLimiter = require('./src/ratelimiter');
+
+const rateLimiter = new RateLimiter();
 
 const proxy = httpProxy.createProxy({ secure: false, proxyTimeout: ENDPOINT_RESPONSE_MILLISECONDS });
 
@@ -82,7 +85,7 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 		if (!validFiles) {
 			res.writeHead(500, { 'Content-Type': 'text/plain' });
 			res.end('unsupported file type\n');
-			
+
 			return null;
 		}
 
@@ -1141,6 +1144,14 @@ const serverOptions = {
 };
 
 https.createServer(serverOptions, async function (req, res) {
+	const ipAddr = req.connection.remoteAddress;
+	rateLimiter.addDateForIp(ipAddr);
+
+	if (rateLimiter.isRateExceededForIp(ipAddr)) {
+		res.writeHead(429, { 'Content-Type': 'text/plain' });
+		res.end('limit reached\n');
+	}
+
 	var url_parts = url.parse(req.url);
 	url_parts = url_parts.path;
 	url_parts = url_parts.split('/');

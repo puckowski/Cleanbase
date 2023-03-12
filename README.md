@@ -210,6 +210,13 @@ POST body:
 }
 Updates user password forcibly. Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Password must be at least 6 characters and less than 33 characters.
 
+## Version 1.5
+
+- Add folder structure.
+- Enhance restart endpoint function.
+- Add IP address rate limiting.
+- Add constants for IP address rate limiting.
+
 ## Version 1.4
 
 - Add guard for zip bombs limiting service zip archives to 250 megabytes uncompressed.
