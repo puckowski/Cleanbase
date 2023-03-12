@@ -1150,383 +1150,383 @@ https.createServer(serverOptions, async function (req, res) {
 	if (rateLimiter.isRateExceededForIp(ipAddr)) {
 		res.writeHead(429, { 'Content-Type': 'text/plain' });
 		res.end('limit reached\n');
-	}
-
-	var url_parts = url.parse(req.url);
-	url_parts = url_parts.path;
-	url_parts = url_parts.split('/');
-
-	const firstSegment = url_parts[1];
-
-	if (req.method === 'POST' && firstSegment === 'createservice') {
-		const bearer = req.headers['authorization'];
-		if (!bearer || !bearer.includes('Bearer ')) {
-			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('unauthorized\n');
-			return;
-		}
-		const token = bearer.substring(bearer.indexOf(' ') + 1, bearer.length);
-		if (!token) {
-			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('unauthorized\n');
-			return;
-		}
-
-		let payload;
-		try {
-			payload = jwt.verify(token, jwtKey)
-		} catch (jwtErr) {
-			if (jwtErr instanceof jwt.JsonWebTokenError) {
-				res.writeHead(401, { 'Content-Type': 'text/plain' });
-				res.end('unauthorized\n');
-				return;
-			}
-
-			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('unauthorized\n');
-			return;
-		}
-
-		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
-		let body = '';
-		req.on('data', chunk => {
-			body += chunk.toString();
-		});
-
-		req.on('end', () => {
-			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end('queued');
-
-			const bodyJson = JSON.parse(body);
-
-			if (bodyJson && bodyJson.name && bodyJson.password && bodyJson.name.length >= 6 && bodyJson.password.length >= 6) {
-				const nameOriginal = bodyJson.name;
-				const nameFormatted = nameOriginal.replace(/[^a-z0-9]/gi, '');
-
-				if (nameOriginal.length === nameFormatted.length && nameFormatted.length <= 32 && bodyJson.password.length <= 32) {
-					createService(bodyJson.name, bodyJson.password, payload.user_id);
-				}
-			}
-		});
-	} else if (req.method === 'POST' && firstSegment === 'createendpoint') {
-		const bearer = req.headers['authorization'];
-		if (!bearer || !bearer.includes('Bearer ')) {
-			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('unauthorized\n');
-			return;
-		}
-		const token = bearer.substring(bearer.indexOf(' ') + 1, bearer.length);
-		if (!token) {
-			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('unauthorized\n');
-			return;
-		}
-
-		let payload;
-		try {
-			payload = jwt.verify(token, jwtKey)
-		} catch (jwtErr) {
-			if (jwtErr instanceof jwt.JsonWebTokenError) {
-				res.writeHead(401, { 'Content-Type': 'text/plain' });
-				res.end('unauthorized\n');
-				return;
-			}
-
-			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('unauthorized\n');
-			return;
-		}
-
-		req.url = req.url.replace('createendpoint/', '');
-		const port = await createEndpoint(req, res);
-
-		if (port) {
-			uploadMedia(req, res, true);
-		} else {
-			res.writeHead(500, { 'Content-Type': 'text/plain' });
-			res.end('error\n');
-		}
-	} else if (req.method === 'POST' && firstSegment === 'removeendpoint') {
-		const bearer = req.headers['authorization'];
-		if (!bearer || !bearer.includes('Bearer ')) {
-			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('unauthorized\n');
-			return;
-		}
-		const token = bearer.substring(bearer.indexOf(' ') + 1, bearer.length);
-		if (!token) {
-			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('unauthorized\n');
-			return;
-		}
-
-		let payload;
-		try {
-			payload = jwt.verify(token, jwtKey)
-		} catch (jwtErr) {
-			if (jwtErr instanceof jwt.JsonWebTokenError) {
-				res.writeHead(401, { 'Content-Type': 'text/plain' });
-				res.end('unauthorized\n');
-				return;
-			}
-
-			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('unauthorized\n');
-			return;
-		}
-
-		let body = '';
-		req.on('data', chunk => {
-			body += chunk.toString();
-		});
-		req.on('end', async () => {
-			const bodyJson = JSON.parse(body);
-
-			req.url = req.url.replace('removeendpoint/', '');
-			await removeEndpoint(req, res, bodyJson);
-
-			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end('queued\n');
-		});
-	} else if (req.method === 'POST' && firstSegment === 'restartendpoint') {
-		const bearer = req.headers['authorization'];
-		if (!bearer || !bearer.includes('Bearer ')) {
-			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('unauthorized\n');
-			return;
-		}
-		const token = bearer.substring(bearer.indexOf(' ') + 1, bearer.length);
-		if (!token) {
-			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('unauthorized\n');
-			return;
-		}
-
-		let payload;
-		try {
-			payload = jwt.verify(token, jwtKey)
-		} catch (jwtErr) {
-			if (jwtErr instanceof jwt.JsonWebTokenError) {
-				res.writeHead(401, { 'Content-Type': 'text/plain' });
-				res.end('unauthorized\n');
-				return;
-			}
-
-			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('unauthorized\n');
-			return;
-		}
-
-		let body = '';
-		req.on('data', chunk => {
-			body += chunk.toString();
-		});
-		req.on('end', async () => {
-			const bodyJson = JSON.parse(body);
-
-			req.url = req.url.replace('restartendpoint/', '');
-			await restartEndpoint(req, res, bodyJson);
-
-			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end('queued\n');
-		});
-	} else if (req.method === 'POST' && firstSegment === 'updateendpoint') {
-		const bearer = req.headers['authorization'];
-		if (!bearer || !bearer.includes('Bearer ')) {
-			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('unauthorized\n');
-			return;
-		}
-		const token = bearer.substring(bearer.indexOf(' ') + 1, bearer.length);
-		if (!token) {
-			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('unauthorized\n');
-			return;
-		}
-
-		let payload;
-		try {
-			payload = jwt.verify(token, jwtKey)
-		} catch (jwtErr) {
-			if (jwtErr instanceof jwt.JsonWebTokenError) {
-				res.writeHead(401, { 'Content-Type': 'text/plain' });
-				res.end('unauthorized\n');
-				return;
-			}
-
-			res.writeHead(401, { 'Content-Type': 'text/plain' });
-			res.end('unauthorized\n');
-			return;
-		}
-
-		req.url = req.url.replace('updateendpoint/', '');
-		uploadMedia(req, res);
-
-		res.writeHead(200, { 'Content-Type': 'text/plain' });
-		res.end('queued\n');
-	} else if (req.method === 'POST' && firstSegment === 'adduser') {
-		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
-		let body = '';
-		req.on('data', chunk => {
-			body += chunk.toString();
-		});
-		req.on('end', async () => {
-			const bodyJson = JSON.parse(body);
-
-			await addUser(req, bodyJson);
-
-			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end('added\n');
-		});
-	} else if (req.method === 'POST' && firstSegment === 'removeuser') {
-		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
-		let body = '';
-		req.on('data', chunk => {
-			body += chunk.toString();
-		});
-		req.on('end', async () => {
-			const bodyJson = JSON.parse(body);
-
-			await removeUser(req, bodyJson);
-
-			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end('removed\n');
-		});
-	} else if (req.method === 'POST' && firstSegment === 'updateuser') {
-		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
-		let body = '';
-		req.on('data', chunk => {
-			body += chunk.toString();
-		});
-		req.on('end', async () => {
-			const bodyJson = JSON.parse(body);
-
-			await updateUser(req, bodyJson);
-
-			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end('updated\n');
-		});
-	} else if (req.method === 'POST' && firstSegment === 'resetuser') {
-		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
-		let body = '';
-		req.on('data', chunk => {
-			body += chunk.toString();
-		});
-		req.on('end', async () => {
-			const bodyJson = JSON.parse(body);
-
-			await resetUser(req, bodyJson);
-
-			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end('reset\n');
-		});
-	} else if (req.method === 'POST' && firstSegment === 'loginuser') {
-		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
-		let body = '';
-		req.on('data', chunk => {
-			body += chunk.toString();
-		});
-		req.on('end', async () => {
-			const bodyJson = JSON.parse(body);
-
-			const token = await loginUser(req, bodyJson);
-
-			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end(token);
-		});
-	} else if (req.method === 'POST' && firstSegment === 'validatejwt') {
-		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
-		let body = '';
-		req.on('data', chunk => {
-			body += chunk.toString();
-		});
-		req.on('end', async () => {
-			const bodyJson = JSON.parse(body);
-
-			const success = await validateJwt(req, bodyJson);
-
-			if (success) {
-				res.writeHead(200, { 'Content-Type': 'text/plain' });
-				res.end('Valid');
-			} else {
-				res.writeHead(401, { 'Content-Type': 'text/plain' });
-				res.end('Invalid');
-			}
-		});
-	} else if (req.method === 'POST' && firstSegment === 'serviceready') {
-		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
-		let body = '';
-		req.on('data', chunk => {
-			body += chunk.toString();
-		});
-		req.on('end', async () => {
-			const bodyJson = JSON.parse(body);
-
-			const success = await isServiceReady(bodyJson);
-
-			if (success) {
-				res.writeHead(200, { 'Content-Type': 'text/plain' });
-				res.end('Ready');
-			} else {
-				res.writeHead(200, { 'Content-Type': 'text/plain' });
-				res.end('Not ready');
-			}
-		});
-	} else if (req.method === 'POST' && firstSegment === 'endpointready') {
-		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
-		let body = '';
-		req.on('data', chunk => {
-			body += chunk.toString();
-		});
-		req.on('end', async () => {
-			const bodyJson = JSON.parse(body);
-
-			const success = await isEndpointReady(bodyJson);
-
-			if (success) {
-				res.writeHead(200, { 'Content-Type': 'text/plain' });
-				res.end('Ready');
-			} else {
-				res.writeHead(200, { 'Content-Type': 'text/plain' });
-				res.end('Not ready');
-			}
-		});
-	} else if (req.method === 'POST' && firstSegment === 'addsuperuser') {
-		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
-		let body = '';
-		req.on('data', chunk => {
-			body += chunk.toString();
-		});
-		req.on('end', async () => {
-			const bodyJson = JSON.parse(body);
-
-			await addSuperuser(req, bodyJson);
-
-			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end('added\n');
-		});
-	} else if (req.method === 'POST' && firstSegment === 'loginsuperuser') {
-		// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
-		let body = '';
-		req.on('data', chunk => {
-			body += chunk.toString();
-		});
-		req.on('end', async () => {
-			const bodyJson = JSON.parse(body);
-
-			const token = await loginSuperuser(req, bodyJson);
-
-			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end(token);
-		});
 	} else {
-		const secondSegment = url_parts[2];
+		var url_parts = url.parse(req.url);
+		url_parts = url_parts.path;
+		url_parts = url_parts.split('/');
 
-		const truthyIfProxied = await executeEndpoint(firstSegment, secondSegment, req, res);
+		const firstSegment = url_parts[1];
 
-		if (!truthyIfProxied) {
-			res.writeHead(500, { 'Content-Type': 'text/plain' });
-			res.end('error\n');
+		if (req.method === 'POST' && firstSegment === 'createservice') {
+			const bearer = req.headers['authorization'];
+			if (!bearer || !bearer.includes('Bearer ')) {
+				res.writeHead(401, { 'Content-Type': 'text/plain' });
+				res.end('unauthorized\n');
+				return;
+			}
+			const token = bearer.substring(bearer.indexOf(' ') + 1, bearer.length);
+			if (!token) {
+				res.writeHead(401, { 'Content-Type': 'text/plain' });
+				res.end('unauthorized\n');
+				return;
+			}
+
+			let payload;
+			try {
+				payload = jwt.verify(token, jwtKey)
+			} catch (jwtErr) {
+				if (jwtErr instanceof jwt.JsonWebTokenError) {
+					res.writeHead(401, { 'Content-Type': 'text/plain' });
+					res.end('unauthorized\n');
+					return;
+				}
+
+				res.writeHead(401, { 'Content-Type': 'text/plain' });
+				res.end('unauthorized\n');
+				return;
+			}
+
+			// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
+			let body = '';
+			req.on('data', chunk => {
+				body += chunk.toString();
+			});
+
+			req.on('end', () => {
+				res.writeHead(200, { 'Content-Type': 'text/plain' });
+				res.end('queued');
+
+				const bodyJson = JSON.parse(body);
+
+				if (bodyJson && bodyJson.name && bodyJson.password && bodyJson.name.length >= 6 && bodyJson.password.length >= 6) {
+					const nameOriginal = bodyJson.name;
+					const nameFormatted = nameOriginal.replace(/[^a-z0-9]/gi, '');
+
+					if (nameOriginal.length === nameFormatted.length && nameFormatted.length <= 32 && bodyJson.password.length <= 32) {
+						createService(bodyJson.name, bodyJson.password, payload.user_id);
+					}
+				}
+			});
+		} else if (req.method === 'POST' && firstSegment === 'createendpoint') {
+			const bearer = req.headers['authorization'];
+			if (!bearer || !bearer.includes('Bearer ')) {
+				res.writeHead(401, { 'Content-Type': 'text/plain' });
+				res.end('unauthorized\n');
+				return;
+			}
+			const token = bearer.substring(bearer.indexOf(' ') + 1, bearer.length);
+			if (!token) {
+				res.writeHead(401, { 'Content-Type': 'text/plain' });
+				res.end('unauthorized\n');
+				return;
+			}
+
+			let payload;
+			try {
+				payload = jwt.verify(token, jwtKey)
+			} catch (jwtErr) {
+				if (jwtErr instanceof jwt.JsonWebTokenError) {
+					res.writeHead(401, { 'Content-Type': 'text/plain' });
+					res.end('unauthorized\n');
+					return;
+				}
+
+				res.writeHead(401, { 'Content-Type': 'text/plain' });
+				res.end('unauthorized\n');
+				return;
+			}
+
+			req.url = req.url.replace('createendpoint/', '');
+			const port = await createEndpoint(req, res);
+
+			if (port) {
+				uploadMedia(req, res, true);
+			} else {
+				res.writeHead(500, { 'Content-Type': 'text/plain' });
+				res.end('error\n');
+			}
+		} else if (req.method === 'POST' && firstSegment === 'removeendpoint') {
+			const bearer = req.headers['authorization'];
+			if (!bearer || !bearer.includes('Bearer ')) {
+				res.writeHead(401, { 'Content-Type': 'text/plain' });
+				res.end('unauthorized\n');
+				return;
+			}
+			const token = bearer.substring(bearer.indexOf(' ') + 1, bearer.length);
+			if (!token) {
+				res.writeHead(401, { 'Content-Type': 'text/plain' });
+				res.end('unauthorized\n');
+				return;
+			}
+
+			let payload;
+			try {
+				payload = jwt.verify(token, jwtKey)
+			} catch (jwtErr) {
+				if (jwtErr instanceof jwt.JsonWebTokenError) {
+					res.writeHead(401, { 'Content-Type': 'text/plain' });
+					res.end('unauthorized\n');
+					return;
+				}
+
+				res.writeHead(401, { 'Content-Type': 'text/plain' });
+				res.end('unauthorized\n');
+				return;
+			}
+
+			let body = '';
+			req.on('data', chunk => {
+				body += chunk.toString();
+			});
+			req.on('end', async () => {
+				const bodyJson = JSON.parse(body);
+
+				req.url = req.url.replace('removeendpoint/', '');
+				await removeEndpoint(req, res, bodyJson);
+
+				res.writeHead(200, { 'Content-Type': 'text/plain' });
+				res.end('queued\n');
+			});
+		} else if (req.method === 'POST' && firstSegment === 'restartendpoint') {
+			const bearer = req.headers['authorization'];
+			if (!bearer || !bearer.includes('Bearer ')) {
+				res.writeHead(401, { 'Content-Type': 'text/plain' });
+				res.end('unauthorized\n');
+				return;
+			}
+			const token = bearer.substring(bearer.indexOf(' ') + 1, bearer.length);
+			if (!token) {
+				res.writeHead(401, { 'Content-Type': 'text/plain' });
+				res.end('unauthorized\n');
+				return;
+			}
+
+			let payload;
+			try {
+				payload = jwt.verify(token, jwtKey)
+			} catch (jwtErr) {
+				if (jwtErr instanceof jwt.JsonWebTokenError) {
+					res.writeHead(401, { 'Content-Type': 'text/plain' });
+					res.end('unauthorized\n');
+					return;
+				}
+
+				res.writeHead(401, { 'Content-Type': 'text/plain' });
+				res.end('unauthorized\n');
+				return;
+			}
+
+			let body = '';
+			req.on('data', chunk => {
+				body += chunk.toString();
+			});
+			req.on('end', async () => {
+				const bodyJson = JSON.parse(body);
+
+				req.url = req.url.replace('restartendpoint/', '');
+				await restartEndpoint(req, res, bodyJson);
+
+				res.writeHead(200, { 'Content-Type': 'text/plain' });
+				res.end('queued\n');
+			});
+		} else if (req.method === 'POST' && firstSegment === 'updateendpoint') {
+			const bearer = req.headers['authorization'];
+			if (!bearer || !bearer.includes('Bearer ')) {
+				res.writeHead(401, { 'Content-Type': 'text/plain' });
+				res.end('unauthorized\n');
+				return;
+			}
+			const token = bearer.substring(bearer.indexOf(' ') + 1, bearer.length);
+			if (!token) {
+				res.writeHead(401, { 'Content-Type': 'text/plain' });
+				res.end('unauthorized\n');
+				return;
+			}
+
+			let payload;
+			try {
+				payload = jwt.verify(token, jwtKey)
+			} catch (jwtErr) {
+				if (jwtErr instanceof jwt.JsonWebTokenError) {
+					res.writeHead(401, { 'Content-Type': 'text/plain' });
+					res.end('unauthorized\n');
+					return;
+				}
+
+				res.writeHead(401, { 'Content-Type': 'text/plain' });
+				res.end('unauthorized\n');
+				return;
+			}
+
+			req.url = req.url.replace('updateendpoint/', '');
+			uploadMedia(req, res);
+
+			res.writeHead(200, { 'Content-Type': 'text/plain' });
+			res.end('queued\n');
+		} else if (req.method === 'POST' && firstSegment === 'adduser') {
+			// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
+			let body = '';
+			req.on('data', chunk => {
+				body += chunk.toString();
+			});
+			req.on('end', async () => {
+				const bodyJson = JSON.parse(body);
+
+				await addUser(req, bodyJson);
+
+				res.writeHead(200, { 'Content-Type': 'text/plain' });
+				res.end('added\n');
+			});
+		} else if (req.method === 'POST' && firstSegment === 'removeuser') {
+			// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
+			let body = '';
+			req.on('data', chunk => {
+				body += chunk.toString();
+			});
+			req.on('end', async () => {
+				const bodyJson = JSON.parse(body);
+
+				await removeUser(req, bodyJson);
+
+				res.writeHead(200, { 'Content-Type': 'text/plain' });
+				res.end('removed\n');
+			});
+		} else if (req.method === 'POST' && firstSegment === 'updateuser') {
+			// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
+			let body = '';
+			req.on('data', chunk => {
+				body += chunk.toString();
+			});
+			req.on('end', async () => {
+				const bodyJson = JSON.parse(body);
+
+				await updateUser(req, bodyJson);
+
+				res.writeHead(200, { 'Content-Type': 'text/plain' });
+				res.end('updated\n');
+			});
+		} else if (req.method === 'POST' && firstSegment === 'resetuser') {
+			// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
+			let body = '';
+			req.on('data', chunk => {
+				body += chunk.toString();
+			});
+			req.on('end', async () => {
+				const bodyJson = JSON.parse(body);
+
+				await resetUser(req, bodyJson);
+
+				res.writeHead(200, { 'Content-Type': 'text/plain' });
+				res.end('reset\n');
+			});
+		} else if (req.method === 'POST' && firstSegment === 'loginuser') {
+			// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
+			let body = '';
+			req.on('data', chunk => {
+				body += chunk.toString();
+			});
+			req.on('end', async () => {
+				const bodyJson = JSON.parse(body);
+
+				const token = await loginUser(req, bodyJson);
+
+				res.writeHead(200, { 'Content-Type': 'text/plain' });
+				res.end(token);
+			});
+		} else if (req.method === 'POST' && firstSegment === 'validatejwt') {
+			// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
+			let body = '';
+			req.on('data', chunk => {
+				body += chunk.toString();
+			});
+			req.on('end', async () => {
+				const bodyJson = JSON.parse(body);
+
+				const success = await validateJwt(req, bodyJson);
+
+				if (success) {
+					res.writeHead(200, { 'Content-Type': 'text/plain' });
+					res.end('Valid');
+				} else {
+					res.writeHead(401, { 'Content-Type': 'text/plain' });
+					res.end('Invalid');
+				}
+			});
+		} else if (req.method === 'POST' && firstSegment === 'serviceready') {
+			// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
+			let body = '';
+			req.on('data', chunk => {
+				body += chunk.toString();
+			});
+			req.on('end', async () => {
+				const bodyJson = JSON.parse(body);
+
+				const success = await isServiceReady(bodyJson);
+
+				if (success) {
+					res.writeHead(200, { 'Content-Type': 'text/plain' });
+					res.end('Ready');
+				} else {
+					res.writeHead(200, { 'Content-Type': 'text/plain' });
+					res.end('Not ready');
+				}
+			});
+		} else if (req.method === 'POST' && firstSegment === 'endpointready') {
+			// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
+			let body = '';
+			req.on('data', chunk => {
+				body += chunk.toString();
+			});
+			req.on('end', async () => {
+				const bodyJson = JSON.parse(body);
+
+				const success = await isEndpointReady(bodyJson);
+
+				if (success) {
+					res.writeHead(200, { 'Content-Type': 'text/plain' });
+					res.end('Ready');
+				} else {
+					res.writeHead(200, { 'Content-Type': 'text/plain' });
+					res.end('Not ready');
+				}
+			});
+		} else if (req.method === 'POST' && firstSegment === 'addsuperuser') {
+			// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
+			let body = '';
+			req.on('data', chunk => {
+				body += chunk.toString();
+			});
+			req.on('end', async () => {
+				const bodyJson = JSON.parse(body);
+
+				await addSuperuser(req, bodyJson);
+
+				res.writeHead(200, { 'Content-Type': 'text/plain' });
+				res.end('added\n');
+			});
+		} else if (req.method === 'POST' && firstSegment === 'loginsuperuser') {
+			// service name alphanumeric max of 32 chars, password must be >= 6 and <= 30
+			let body = '';
+			req.on('data', chunk => {
+				body += chunk.toString();
+			});
+			req.on('end', async () => {
+				const bodyJson = JSON.parse(body);
+
+				const token = await loginSuperuser(req, bodyJson);
+
+				res.writeHead(200, { 'Content-Type': 'text/plain' });
+				res.end(token);
+			});
+		} else {
+			const secondSegment = url_parts[2];
+
+			const truthyIfProxied = await executeEndpoint(firstSegment, secondSegment, req, res);
+
+			if (!truthyIfProxied) {
+				res.writeHead(500, { 'Content-Type': 'text/plain' });
+				res.end('error\n');
+			}
 		}
 	}
 }).listen(443, '0.0.0.0');
