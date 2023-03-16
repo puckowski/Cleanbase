@@ -745,7 +745,7 @@ async function loginSuperuser(req, postBody) {
 
 		let name, password, active, id;
 
-		if (rows.length > 0) {
+		if (rows.length === 1) {
 			id = rows[0].id;
 			name = rows[0].user_name;
 			password = rows[0].user_password;
@@ -1014,7 +1014,7 @@ async function refreshSuperuserJwt(req, postBody) {
 			return;
 		}
 
-		const existingRows = await conn.query("SELECT user_name, id from tbl_user where user_name = ?", [
+		const existingRows = await conn.query("SELECT user_name, id from tbl_superuser where user_name = ?", [
 			payload.name
 		]);
 
