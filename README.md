@@ -85,7 +85,7 @@ POST body:
 	"password": "123456"
 }
 Requires Authorization Bearer header (superuser JWT).
-Service name must be alphanumeric and have a maximum of 32 characters. Service name must be at least 6 characters. Password must be at least 6 characters and less than 33 characters.
+Service name must be alphanumeric and have a maximum of 32 characters. Service name must be at least 6 characters. Password must be at least 12 characters and less than 33 characters.
 
 https://localhost/createendpoint/{SERVICE_NAME}/{ENDPOINT_NAME}
 Multipart form with one part where the name is the service password and the value is a 50 megabyte .zip archive of your Node.js service.
@@ -128,6 +128,13 @@ POST body:
 	"username": "abcdefg"
 }
 
+https://localhost/refreshsuperuserjwt/{SERVICE_NAME}
+POST body:
+{
+	"key": "123456",
+	"jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFiY2RlZmciLCJ1c2VyX2lkIjoxLCJzZXJ2aWNlX2lkIjoxLCJpYXQiOjE2NTA0OTA4MjgsImV4cCI6MTY1MDQ5MTcyOH0.GUpK78Im8UIO9I6mAvHB2FZoTc0a0HKqQTjQcOXRnS"
+}
+
 https://localhost/removeendpoint/{SERVICE_NAME}/{ENDPOINT_NAME}
 POST body:
 {
@@ -158,22 +165,29 @@ POST body:
 	"jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFiY2RlZmciLCJ1c2VyX2lkIjoxLCJzZXJ2aWNlX2lkIjoxLCJpYXQiOjE2NTA0OTA4MjgsImV4cCI6MTY1MDQ5MTcyOH0.GUpK78Im8UIO9I6mAvHB2FZoTc0a0HKqQTjQcOXRnS"
 }
 
+https://172.17.0.1:443/refreshjwt/{SERVICE_NAME}
+POST body:
+{
+	"key": "123456",
+	"jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFiY2RlZmciLCJ1c2VyX2lkIjoxLCJzZXJ2aWNlX2lkIjoxLCJpYXQiOjE2NTA0OTA4MjgsImV4cCI6MTY1MDQ5MTcyOH0.GUpK78Im8UIO9I6mAvHB2FZoTc0a0HKqQTjQcOXRnS"
+}
+
 https://172.17.0.1:443/adduser/{SERVICE_NAME}
 POST body:
 {
 	"password": "123456",
 	"username": "abcdefg",
-	"userPassword": "123456",
+	"userPassword": "123456789101112",
 	"userLevel": 5
 }
-Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Password must be at least 6 characters and less than 33 characters. User level must be at least 1 and no more than 10.
+Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Password must be at least 12 characters and less than 33 characters. User level must be at least 1 and no more than 10.
 
 https://172.17.0.1:443/loginuser/{SERVICE_NAME}
 POST body:
 {
 	"key": "123456",
 	"username": "abcdefg",
-	"userPassword": "123456"
+	"userPassword": "123456789101112"
 }
 Returns JWT with payload containing:
 ```
@@ -196,19 +210,27 @@ POST body:
 {
 	"password": "123456",
 	"username": "abcdefg",
-	"userPassword": "123456",
+	"userPassword": "123456789101112",
 	"newPassword": "789012"
 }
-Updates user password. Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Passwords must be at least 6 characters and less than 33 characters.
+Updates user password. Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Passwords must be at least 12 characters and less than 33 characters.
 
 https://172.17.0.1:443/resetuser/{SERVICE_NAME}
 POST body:
 {
 	"password": "123456",
 	"username": "abcdefg",
-	"newPassword": "789012"
+	"newPassword": "789012345678910"
 }
-Updates user password forcibly. Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Password must be at least 6 characters and less than 33 characters.
+Updates user password forcibly. Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Password must be at least 12 characters and less than 33 characters.
+
+## Version 1.6
+
+- Add handling for invalid JSON.
+- Strengthen password requirements.
+- Add new refresh JWT function for endpoints.
+- Add new refresh superuser JWT function.
+- Bug fix JWT verification function.
 
 ## Version 1.5
 
