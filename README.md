@@ -131,7 +131,7 @@ POST body:
 https://localhost/refreshsuperuserjwt/{SERVICE_NAME}
 POST body:
 {
-	"key": "123456",
+	"password": "123456789101112",
 	"jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFiY2RlZmciLCJ1c2VyX2lkIjoxLCJzZXJ2aWNlX2lkIjoxLCJpYXQiOjE2NTA0OTA4MjgsImV4cCI6MTY1MDQ5MTcyOH0.GUpK78Im8UIO9I6mAvHB2FZoTc0a0HKqQTjQcOXRnS"
 }
 
@@ -161,21 +161,21 @@ Services have a few endpoints available for convenience.
 https://172.17.0.1:443/validatejwt/{SERVICE_NAME}
 POST body:
 {
-	"key": "123456",
+	"password": "123456789101112",
 	"jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFiY2RlZmciLCJ1c2VyX2lkIjoxLCJzZXJ2aWNlX2lkIjoxLCJpYXQiOjE2NTA0OTA4MjgsImV4cCI6MTY1MDQ5MTcyOH0.GUpK78Im8UIO9I6mAvHB2FZoTc0a0HKqQTjQcOXRnS"
 }
 
 https://172.17.0.1:443/refreshjwt/{SERVICE_NAME}
 POST body:
 {
-	"key": "123456",
+	"password": "123456789101112",
 	"jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFiY2RlZmciLCJ1c2VyX2lkIjoxLCJzZXJ2aWNlX2lkIjoxLCJpYXQiOjE2NTA0OTA4MjgsImV4cCI6MTY1MDQ5MTcyOH0.GUpK78Im8UIO9I6mAvHB2FZoTc0a0HKqQTjQcOXRnS"
 }
 
 https://172.17.0.1:443/adduser/{SERVICE_NAME}
 POST body:
 {
-	"password": "123456",
+	"password": "123456789101112",
 	"username": "abcdefg",
 	"userPassword": "123456789101112",
 	"userLevel": 5
@@ -185,7 +185,7 @@ Username must be alphanumeric and have a maximum of 32 characters at be at least
 https://172.17.0.1:443/loginuser/{SERVICE_NAME}
 POST body:
 {
-	"key": "123456",
+	"password": "123456789101112",
 	"username": "abcdefg",
 	"userPassword": "123456789101112"
 }
@@ -223,6 +223,13 @@ POST body:
 	"newPassword": "789012345678910"
 }
 Updates user password forcibly. Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Password must be at least 12 characters and less than 33 characters.
+
+## Version 1.7
+
+- Update JWT signing algorithm to be stronger.
+- Strengthen more endpoints by requirements superuser service password.
+- Update responses from endpoints to be more accurate.
+- Make minimum password length configurable by constant (default 12).
 
 ## Version 1.6
 

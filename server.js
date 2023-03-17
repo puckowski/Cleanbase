@@ -8,7 +8,7 @@ const jwt = require("jsonwebtoken");
 const httpProxy = require('http-proxy');
 const bcrypt = require("bcrypt");
 const { Worker } = require("worker_threads");
-const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS, ENDPOINT_RESPONSE_MILLISECONDS, JWT_SECRET } = require('./constants');
+const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS, ENDPOINT_RESPONSE_MILLISECONDS, JWT_SECRET, MINIMUM_PASSWORD_LENGTH } = require('./constants');
 const RateLimiter = require('./src/ratelimiter');
 
 const rateLimiter = new RateLimiter();
@@ -21,6 +21,7 @@ proxy.on('error', (err, req, res) => {
 });
 
 const jwtKey = JWT_SECRET;
+const minimumPasswordLength = MINIMUM_PASSWORD_LENGTH;
 
 const endpointReadyMap = new Map();
 const serviceReadyMap = new Map();
@@ -462,7 +463,7 @@ async function addUser(req, postBody) {
 
 		const usernameFormatted = username.replace(/[^a-z0-9]/gi, '');
 
-		if (usernameFormatted === username && username.length >= 6 && username.length <= 32 && userPass.length >= 12 && userPass.length <= 32) {
+		if (usernameFormatted === username && username.length >= 6 && username.length <= 32 && userPass.length >= minimumPasswordLength && userPass.length <= 32) {
 			const existingRows = await conn.query("SELECT user_name from tbl_user where service_id = ? and user_name = ?", [
 				id, username
 			]);
@@ -474,6 +475,8 @@ async function addUser(req, postBody) {
 				const res = await conn.query("INSERT INTO tbl_user (user_name, user_password, service_id, user_level) VALUES (?, ?, ?, ?)", [
 					username, hashedPass, id, userLevel
 				]);
+
+				return true;
 			}
 		}
 	} catch (err) {
@@ -532,7 +535,7 @@ async function updateUser(req, postBody) {
 
 		const newPass = postBody.newPassword;
 
-		if (usernameFormatted === username && username.length >= 6 && username.length <= 32 && userPass.length >= 12 && userPass.length <= 32) {
+		if (usernameFormatted === username && username.length >= 6 && username.length <= 32 && userPass.length >= minimumPasswordLength && userPass.length <= 32) {
 			const existingRows = await conn.query("SELECT user_name, user_password, id from tbl_user where service_id = ? and user_name = ?", [
 				id, username
 			]);
@@ -540,13 +543,15 @@ async function updateUser(req, postBody) {
 			if (existingRows.length === 1 && existingRows[0].user_password && existingRows[0].id && existingRows[0].id > 0) {
 				const validPassword = await bcrypt.compare(userPass, existingRows[0].user_password);
 				if (validPassword) {
-					if (newPass.length >= 12 && newPass.length <= 32) {
+					if (newPass.length >= minimumPasswordLength && newPass.length <= 32) {
 						const salt = await bcrypt.genSalt(10);
 						const hashedPass = await bcrypt.hash(newPass, salt);
 
 						const res = await conn.query("UPDATE tbl_user SET user_password = ? WHERE user_name = ? AND id = ?", [
 							hashedPass, existingRows[0].user_name, existingRows[0].id
 						]);
+
+						return true;
 					}
 				}
 			}
@@ -611,13 +616,15 @@ async function resetUser(req, postBody) {
 			]);
 
 			if (existingRows.length === 1 && existingRows[0].id && existingRows[0].id > 0) {
-				if (newPass.length >= 12 && newPass.length <= 32) {
+				if (newPass.length >= minimumPasswordLength && newPass.length <= 32) {
 					const salt = await bcrypt.genSalt(10);
 					const hashedPass = await bcrypt.hash(newPass, salt);
 
 					const res = await conn.query("UPDATE tbl_user SET user_password = ? WHERE user_name = ? AND id = ?", [
 						hashedPass, existingRows[0].user_name, existingRows[0].id
 					]);
+
+					return true;
 				}
 			}
 		}
@@ -712,13 +719,15 @@ async function addSuperuser(req, postBody) {
 
 			const usernameFormatted = username.replace(/[^a-z0-9]/gi, '');
 
-			if (usernameFormatted === username && username.length >= 6 && username.length <= 32 && userPass.length >= 12 && userPass.length <= 32) {
+			if (usernameFormatted === username && username.length >= 6 && username.length <= 32 && userPass.length >= minimumPasswordLength && userPass.length <= 32) {
 				const salt = await bcrypt.genSalt(10);
 				const hashedPass = await bcrypt.hash(userPass, salt);
 
 				const res = await conn.query("INSERT INTO tbl_superuser (user_name, user_password, is_active) VALUES (?, ?, ?)", [
 					username, hashedPass, 0
 				]);
+
+				return true;
 			}
 		}
 	} catch (err) {
@@ -756,11 +765,11 @@ async function loginSuperuser(req, postBody) {
 
 			const usernameFormatted = username.replace(/[^a-z0-9]/gi, '');
 
-			if ((active === 1 || active === true) && usernameFormatted === username && username.length >= 6 && username.length <= 32 && userPass.length >= 12 && userPass.length <= 32) {
+			if ((active === 1 || active === true) && usernameFormatted === username && username.length >= 6 && username.length <= 32 && userPass.length >= minimumPasswordLength && userPass.length <= 32) {
 				const validPassword = await bcrypt.compare(userPass, password);
 				if (validPassword) {
 					const newToken = jwt.sign({ name, user_id: id }, jwtKey, {
-						algorithm: "HS256",
+						algorithm: "HS384",
 						expiresIn: jwtExpirySeconds,
 					});
 
@@ -778,7 +787,7 @@ async function loginSuperuser(req, postBody) {
 }
 
 async function loginUser(req, postBody) {
-	if (!postBody || !postBody.username || !postBody.userPassword || !postBody.key || postBody.key === '') {
+	if (!postBody || !postBody.username || !postBody.userPassword || !postBody.password || postBody.password === '') {
 		return;
 	}
 
@@ -795,7 +804,7 @@ async function loginUser(req, postBody) {
 	try {
 		conn = await pool.getConnection();
 
-		const rows = await conn.query("SELECT id from tbl_service where service_name = ?", [
+		const rows = await conn.query("SELECT id, service_password from tbl_service where service_name = ?", [
 			serviceSegment
 		]);
 
@@ -809,12 +818,17 @@ async function loginUser(req, postBody) {
 			return;
 		}
 
+		const validPassword = await bcrypt.compare(postBody.password, rows[0].service_password);
+		if (!validPassword) {
+			return;
+		}
+
 		const username = postBody.username;
 		const userPass = postBody.userPassword;
 
 		const usernameFormatted = username.replace(/[^a-z0-9]/gi, '');
 
-		if (usernameFormatted === username && username.length >= 6 && username.length <= 32 && userPass.length >= 12 && userPass.length <= 32) {
+		if (usernameFormatted === username && username.length >= 6 && username.length <= 32 && userPass.length >= minimumPasswordLength && userPass.length <= 32) {
 			const existingRows = await conn.query("SELECT user_name, user_password, id, user_level from tbl_user where service_id = ? and user_name = ?", [
 				id, username
 			]);
@@ -823,7 +837,7 @@ async function loginUser(req, postBody) {
 				const validPassword = await bcrypt.compare(userPass, existingRows[0].user_password);
 				if (validPassword) {
 					const newToken = jwt.sign({ username, user_id: existingRows[0].id, service_id: id, user_level: existingRows[0].user_level }, jwtKey, {
-						algorithm: "HS256",
+						algorithm: "HS384",
 						expiresIn: jwtExpirySeconds,
 					});
 
@@ -841,7 +855,7 @@ async function loginUser(req, postBody) {
 }
 
 async function validateJwt(req, postBody) {
-	if (!postBody || !postBody.jwt || postBody.jwt === '' || !postBody.key || postBody.key === '') {
+	if (!postBody || !postBody.jwt || postBody.jwt === '' || !postBody.password || postBody.password === '') {
 		return;
 	}
 
@@ -858,7 +872,7 @@ async function validateJwt(req, postBody) {
 	try {
 		conn = await pool.getConnection();
 
-		const rows = await conn.query("SELECT id from tbl_service where service_name = ?", [
+		const rows = await conn.query("SELECT id, service_password from tbl_service where service_name = ?", [
 			serviceSegment
 		]);
 
@@ -869,6 +883,11 @@ async function validateJwt(req, postBody) {
 		}
 
 		if (!id || id < 1) {
+			return;
+		}
+
+		const validPassword = await bcrypt.compare(postBody.password, rows[0].service_password);
+		if (!validPassword) {
 			return;
 		}
 
@@ -896,7 +915,7 @@ async function validateJwt(req, postBody) {
 }
 
 async function refreshJwt(req, postBody) {
-	if (!postBody || !postBody.jwt || postBody.jwt === '' || !postBody.key || postBody.key === '') {
+	if (!postBody || !postBody.jwt || postBody.jwt === '' || !postBody.password || postBody.password === '') {
 		return;
 	}
 
@@ -927,7 +946,7 @@ async function refreshJwt(req, postBody) {
 			return;
 		}
 
-		const validPassword = await bcrypt.compare(postBody.key, rows[0].service_password);
+		const validPassword = await bcrypt.compare(postBody.password, rows[0].service_password);
 		if (!validPassword) {
 			return;
 		}
@@ -950,7 +969,7 @@ async function refreshJwt(req, postBody) {
 
 			if (existingRows.length === 1) {
 				const newToken = jwt.sign({ username: existingRows[0].user_name, user_id: existingRows[0].id, service_id: id, user_level: existingRows[0].user_level }, jwtKey, {
-					algorithm: "HS256",
+					algorithm: "HS384",
 					expiresIn: jwtExpirySeconds,
 				});
 
@@ -967,7 +986,7 @@ async function refreshJwt(req, postBody) {
 }
 
 async function refreshSuperuserJwt(req, postBody) {
-	if (!postBody || !postBody.jwt || postBody.jwt === '' || !postBody.key || postBody.key === '') {
+	if (!postBody || !postBody.jwt || postBody.jwt === '' || !postBody.password || postBody.password === '') {
 		return;
 	}
 
@@ -998,7 +1017,7 @@ async function refreshSuperuserJwt(req, postBody) {
 			return;
 		}
 
-		const validPassword = await bcrypt.compare(postBody.key, rows[0].service_password);
+		const validPassword = await bcrypt.compare(postBody.password, rows[0].service_password);
 		if (!validPassword) {
 			return;
 		}
@@ -1020,7 +1039,7 @@ async function refreshSuperuserJwt(req, postBody) {
 
 		if (existingRows.length === 1) {
 			const newToken = jwt.sign({ name: existingRows[0].user_name, user_id: existingRows[0].id }, jwtKey, {
-				algorithm: "HS256",
+				algorithm: "HS384",
 				expiresIn: jwtExpirySeconds,
 			});
 
@@ -1327,7 +1346,7 @@ https.createServer(serverOptions, async function (req, res) {
 					return;
 				}
 
-				// service name alphanumeric max of 32 chars, password must be >= 12 and <= 30
+				// service name alphanumeric max of 32 chars, password must be >= minimumPasswordLength and <= 30
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
@@ -1338,14 +1357,14 @@ https.createServer(serverOptions, async function (req, res) {
 					res.end('queued');
 
 					let bodyJson = null;
-					
+
 					try {
 						bodyJson = JSON.parse(body);
 					} catch (parseError) {
 
 					}
 
-					if (bodyJson && bodyJson.name && bodyJson.password && bodyJson.name.length >= 6 && bodyJson.password.length >= 12) {
+					if (bodyJson && bodyJson.name && bodyJson.password && bodyJson.name.length >= 6 && bodyJson.password.length >= minimumPasswordLength) {
 						const nameOriginal = bodyJson.name;
 						const nameFormatted = nameOriginal.replace(/[^a-z0-9]/gi, '');
 
@@ -1427,7 +1446,7 @@ https.createServer(serverOptions, async function (req, res) {
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
-					
+
 					try {
 						bodyJson = JSON.parse(body);
 					} catch (parseError) {
@@ -1475,7 +1494,7 @@ https.createServer(serverOptions, async function (req, res) {
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
-					
+
 					try {
 						bodyJson = JSON.parse(body);
 					} catch (parseError) {
@@ -1523,34 +1542,39 @@ https.createServer(serverOptions, async function (req, res) {
 				res.writeHead(200, { 'Content-Type': 'text/plain' });
 				res.end('queued\n');
 			} else if (req.method === 'POST' && firstSegment === 'adduser') {
-				// service name alphanumeric max of 32 chars, password must be >= 12 and <= 30
+				// service name alphanumeric max of 32 chars, password must be >= minimumPasswordLength and <= 30
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
-					
+
 					try {
 						bodyJson = JSON.parse(body);
 					} catch (parseError) {
 
 					}
 
-					await addUser(req, bodyJson);
+					const result = await addUser(req, bodyJson);
 
-					res.writeHead(200, { 'Content-Type': 'text/plain' });
-					res.end('added\n');
+					if (result === true) {
+						res.writeHead(200, { 'Content-Type': 'text/plain' });
+						res.end('added\n');
+					} else {
+						res.writeHead(500, { 'Content-Type': 'text/plain' });
+						res.end('error\n');
+					}
 				});
 			} else if (req.method === 'POST' && firstSegment === 'removeuser') {
-				// service name alphanumeric max of 32 chars, password must be >= 12 and <= 30
+				// service name alphanumeric max of 32 chars, password must be >= minimumPasswordLength and <= 30
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
-					
+
 					try {
 						bodyJson = JSON.parse(body);
 					} catch (parseError) {
@@ -1563,54 +1587,64 @@ https.createServer(serverOptions, async function (req, res) {
 					res.end('removed\n');
 				});
 			} else if (req.method === 'POST' && firstSegment === 'updateuser') {
-				// service name alphanumeric max of 32 chars, password must be >= 12 and <= 30
+				// service name alphanumeric max of 32 chars, password must be >= minimumPasswordLength and <= 30
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
-					
+
 					try {
 						bodyJson = JSON.parse(body);
 					} catch (parseError) {
 
 					}
 
-					await updateUser(req, bodyJson);
+					const result = await updateUser(req, bodyJson);
 
-					res.writeHead(200, { 'Content-Type': 'text/plain' });
-					res.end('updated\n');
+					if (result === true) {
+						res.writeHead(200, { 'Content-Type': 'text/plain' });
+						res.end('updated\n');
+					} else {
+						res.writeHead(500, { 'Content-Type': 'text/plain' });
+						res.end('error\n');
+					}
 				});
 			} else if (req.method === 'POST' && firstSegment === 'resetuser') {
-				// service name alphanumeric max of 32 chars, password must be >= 12 and <= 30
+				// service name alphanumeric max of 32 chars, password must be >= minimumPasswordLength and <= 30
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
-					
+
 					try {
 						bodyJson = JSON.parse(body);
 					} catch (parseError) {
 
 					}
 
-					await resetUser(req, bodyJson);
+					const result = await resetUser(req, bodyJson);
 
-					res.writeHead(200, { 'Content-Type': 'text/plain' });
-					res.end('reset\n');
+					if (result === true) {
+						res.writeHead(200, { 'Content-Type': 'text/plain' });
+						res.end('reset\n');
+					} else {
+						res.writeHead(500, { 'Content-Type': 'text/plain' });
+						res.end('error\n');
+					}
 				});
 			} else if (req.method === 'POST' && firstSegment === 'loginuser') {
-				// service name alphanumeric max of 32 chars, password must be >= 12 and <= 30
+				// service name alphanumeric max of 32 chars, password must be >= minimumPasswordLength and <= 30
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
-					
+
 					try {
 						bodyJson = JSON.parse(body);
 					} catch (parseError) {
@@ -1623,14 +1657,14 @@ https.createServer(serverOptions, async function (req, res) {
 					res.end(token);
 				});
 			} else if (req.method === 'POST' && firstSegment === 'refreshjwt') {
-				// service name alphanumeric max of 32 chars, password must be >= 12 and <= 30
+				// service name alphanumeric max of 32 chars, password must be >= minimumPasswordLength and <= 30
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
-					
+
 					try {
 						bodyJson = JSON.parse(body);
 					} catch (parseError) {
@@ -1648,14 +1682,14 @@ https.createServer(serverOptions, async function (req, res) {
 					}
 				});
 			} else if (req.method === 'POST' && firstSegment === 'refreshsuperuserjwt') {
-				// service name alphanumeric max of 32 chars, password must be >= 12 and <= 30
+				// service name alphanumeric max of 32 chars, password must be >= minimumPasswordLength and <= 30
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
-					
+
 					try {
 						bodyJson = JSON.parse(body);
 					} catch (parseError) {
@@ -1673,14 +1707,14 @@ https.createServer(serverOptions, async function (req, res) {
 					}
 				});
 			} else if (req.method === 'POST' && firstSegment === 'validatejwt') {
-				// service name alphanumeric max of 32 chars, password must be >= 12 and <= 30
+				// service name alphanumeric max of 32 chars, password must be >= minimumPasswordLength and <= 30
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
-					
+
 					try {
 						bodyJson = JSON.parse(body);
 					} catch (parseError) {
@@ -1698,14 +1732,14 @@ https.createServer(serverOptions, async function (req, res) {
 					}
 				});
 			} else if (req.method === 'POST' && firstSegment === 'serviceready') {
-				// service name alphanumeric max of 32 chars, password must be >= 12 and <= 30
+				// service name alphanumeric max of 32 chars, password must be >= minimumPasswordLength and <= 30
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
-					
+
 					try {
 						bodyJson = JSON.parse(body);
 					} catch (parseError) {
@@ -1723,14 +1757,14 @@ https.createServer(serverOptions, async function (req, res) {
 					}
 				});
 			} else if (req.method === 'POST' && firstSegment === 'endpointready') {
-				// service name alphanumeric max of 32 chars, password must be >= 12 and <= 30
+				// service name alphanumeric max of 32 chars, password must be >= minimumPasswordLength and <= 30
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
-					
+
 					try {
 						bodyJson = JSON.parse(body);
 					} catch (parseError) {
@@ -1748,34 +1782,39 @@ https.createServer(serverOptions, async function (req, res) {
 					}
 				});
 			} else if (req.method === 'POST' && firstSegment === 'addsuperuser') {
-				// service name alphanumeric max of 32 chars, password must be >= 12 and <= 30
+				// service name alphanumeric max of 32 chars, password must be >= minimumPasswordLength and <= 30
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
-					
+
 					try {
 						bodyJson = JSON.parse(body);
 					} catch (parseError) {
 
 					}
 
-					await addSuperuser(req, bodyJson);
+					const result = await addSuperuser(req, bodyJson);
 
-					res.writeHead(200, { 'Content-Type': 'text/plain' });
-					res.end('added\n');
+					if (result === true) {
+						res.writeHead(200, { 'Content-Type': 'text/plain' });
+						res.end('added\n');
+					} else {
+						res.writeHead(500, { 'Content-Type': 'text/plain' });
+						res.end('error\n');
+					}
 				});
 			} else if (req.method === 'POST' && firstSegment === 'loginsuperuser') {
-				// service name alphanumeric max of 32 chars, password must be >= 12 and <= 30
+				// service name alphanumeric max of 32 chars, password must be >= minimumPasswordLength and <= 30
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
-					
+
 					try {
 						bodyJson = JSON.parse(body);
 					} catch (parseError) {
