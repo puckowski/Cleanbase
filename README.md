@@ -35,6 +35,14 @@ For added security, add sudoer account names, uppercase, to the following array 
 
 ```const BANNED_SERVICE_UPPERCASE_NAMES = ['ROOT'];```
 
+If using a MariaDB database not on localhost, update ```localhost``` with the host for your database in ```scripts/rebuildall.sh```.
+
+```
+while ! mysqladmin ping -h"localhost" --silent; do
+    sleep 1
+done
+```
+
 ## Running
 
 In a terminal, run the following command:
@@ -227,6 +235,12 @@ POST body:
 	"newPassword": "789012345678910"
 }
 Updates user password forcibly. Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Password must be at least 12 characters and less than 33 characters.
+
+
+## Version 2.1
+
+- Add constants for database connection configuration.
+- Increase the maximum number of connections by default.
 
 ## Version 2.0
 

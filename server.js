@@ -8,7 +8,7 @@ const jwt = require("jsonwebtoken");
 const httpProxy = require('http-proxy');
 const bcrypt = require("bcrypt");
 const { Worker } = require("worker_threads");
-const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS, ENDPOINT_RESPONSE_MILLISECONDS, JWT_SECRET, MINIMUM_PASSWORD_LENGTH, MAX_JSON_LENGTH, BANNED_SERVICE_UPPERCASE_NAMES } = require('./constants');
+const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS, ENDPOINT_RESPONSE_MILLISECONDS, JWT_SECRET, MINIMUM_PASSWORD_LENGTH, MAX_JSON_LENGTH, BANNED_SERVICE_UPPERCASE_NAMES, DATABASE_HOST, DATABASE_USER, DATABASE_CONNECTION_LIMIT } = require('./constants');
 const RateLimiter = require('./src/ratelimiter');
 const sanitizeUrl = require("@braintree/sanitize-url").sanitizeUrl;
 
@@ -29,10 +29,10 @@ const serviceReadyMap = new Map();
 
 const mariadb = require('mariadb');
 const pool = mariadb.createPool({
-	host: 'localhost',
-	user: 'root',
+	host: DATABASE_HOST,
+	user: DATABASE_USER,
 	password: DATABASE_PASSWORD,
-	connectionLimit: 10,
+	connectionLimit: DATABASE_CONNECTION_LIMIT,
 	database: 'cleanbase'
 });
 

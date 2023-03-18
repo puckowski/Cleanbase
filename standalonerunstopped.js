@@ -2,12 +2,12 @@ var fs = require('fs');
 var cp = require('child_process');
 
 const mariadb = require('mariadb');
-const { DATABASE_PASSWORD } = require('./constants');
+const { DATABASE_PASSWORD, DATABASE_HOST, DATABASE_USER, DATABASE_CONNECTION_LIMIT } = require('./constants');
 const pool = mariadb.createPool({
-	host: 'localhost',
-	user: 'root',
+	host: DATABASE_HOST,
+	user: DATABASE_USER,
 	password: DATABASE_PASSWORD,
-	connectionLimit: 10,
+	connectionLimit: DATABASE_CONNECTION_LIMIT,
 	database: 'cleanbase'
 });
 
