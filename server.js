@@ -8,7 +8,7 @@ const jwt = require("jsonwebtoken");
 const httpProxy = require('http-proxy');
 const bcrypt = require("bcrypt");
 const { Worker } = require("worker_threads");
-const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS, ENDPOINT_RESPONSE_MILLISECONDS, JWT_SECRET, MINIMUM_PASSWORD_LENGTH } = require('./constants');
+const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS, ENDPOINT_RESPONSE_MILLISECONDS, JWT_SECRET, MINIMUM_PASSWORD_LENGTH, MAX_JSON_LENGTH } = require('./constants');
 const RateLimiter = require('./src/ratelimiter');
 
 const rateLimiter = new RateLimiter();
@@ -37,9 +37,30 @@ const pool = mariadb.createPool({
 
 const jwtExpirySeconds = JWT_EXPIRY_SECONDS;
 const uploadDir = path.join(__dirname, '/uploads/');
+const maxJsonLength = MAX_JSON_LENGTH;
 
 if (!fs.existsSync(uploadDir)) {
 	fs.mkdirSync(uploadDir);
+}
+
+const parseJsonSafely = (text, allowedFieldUppercaseSet) => {
+	if (text.length > maxJsonLength) {
+		return {};
+	} else if (/^[\],:{}\s]*$/.test(text.replace(/\\["\\/bfnrtu]/g, '@').
+		replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').
+		replace(/(?:^|:|,)(?:\s*\[)+/g, ''))) {
+		const obj = JSON.parse(text, (key, value) => {
+			if (allowedFieldUppercaseSet.has(key.toUpperCase())) {
+				return value;
+			}
+
+			return undefined;
+		});
+
+		return obj;
+	}
+
+	return {};
 }
 
 const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
@@ -1359,7 +1380,7 @@ https.createServer(serverOptions, async function (req, res) {
 					let bodyJson = null;
 
 					try {
-						bodyJson = JSON.parse(body);
+						bodyJson = parseJsonSafely(body, new Set(['', 'NAME', 'PASSWORD']));
 					} catch (parseError) {
 
 					}
@@ -1448,7 +1469,7 @@ https.createServer(serverOptions, async function (req, res) {
 					let bodyJson = null;
 
 					try {
-						bodyJson = JSON.parse(body);
+						bodyJson = parseJsonSafely(body, new Set(['', 'PASSWORD']));
 					} catch (parseError) {
 
 					}
@@ -1496,7 +1517,7 @@ https.createServer(serverOptions, async function (req, res) {
 					let bodyJson = null;
 
 					try {
-						bodyJson = JSON.parse(body);
+						bodyJson = parseJsonSafely(body, new Set(['', 'PASSWORD']));
 					} catch (parseError) {
 
 					}
@@ -1551,7 +1572,7 @@ https.createServer(serverOptions, async function (req, res) {
 					let bodyJson = null;
 
 					try {
-						bodyJson = JSON.parse(body);
+						bodyJson = parseJsonSafely(body, new Set(['', 'USERPASSWORD', 'USERLEVEL', 'USERNAME', 'PASSWORD']));
 					} catch (parseError) {
 
 					}
@@ -1576,7 +1597,7 @@ https.createServer(serverOptions, async function (req, res) {
 					let bodyJson = null;
 
 					try {
-						bodyJson = JSON.parse(body);
+						bodyJson = parseJsonSafely(body, new Set(['', 'USERNAME', 'PASSWORD']));
 					} catch (parseError) {
 
 					}
@@ -1596,7 +1617,7 @@ https.createServer(serverOptions, async function (req, res) {
 					let bodyJson = null;
 
 					try {
-						bodyJson = JSON.parse(body);
+						bodyJson = parseJsonSafely(body, new Set(['', 'USERPASSWORD', 'NEWPASSWORD', 'USERNAME', 'PASSWORD']));
 					} catch (parseError) {
 
 					}
@@ -1621,7 +1642,7 @@ https.createServer(serverOptions, async function (req, res) {
 					let bodyJson = null;
 
 					try {
-						bodyJson = JSON.parse(body);
+						bodyJson = parseJsonSafely(body, new Set(['', 'NEWPASSWORD', 'USERNAME', 'PASSWORD']));
 					} catch (parseError) {
 
 					}
@@ -1646,7 +1667,7 @@ https.createServer(serverOptions, async function (req, res) {
 					let bodyJson = null;
 
 					try {
-						bodyJson = JSON.parse(body);
+						bodyJson = parseJsonSafely(body, new Set(['', 'USERPASSWORD', 'USERNAME', 'PASSWORD']));
 					} catch (parseError) {
 
 					}
@@ -1666,7 +1687,7 @@ https.createServer(serverOptions, async function (req, res) {
 					let bodyJson = null;
 
 					try {
-						bodyJson = JSON.parse(body);
+						bodyJson = parseJsonSafely(body, new Set(['', 'JWT', 'PASSWORD']));
 					} catch (parseError) {
 
 					}
@@ -1691,7 +1712,7 @@ https.createServer(serverOptions, async function (req, res) {
 					let bodyJson = null;
 
 					try {
-						bodyJson = JSON.parse(body);
+						bodyJson = parseJsonSafely(body, new Set(['', 'JWT', 'PASSWORD']));
 					} catch (parseError) {
 
 					}
@@ -1716,7 +1737,7 @@ https.createServer(serverOptions, async function (req, res) {
 					let bodyJson = null;
 
 					try {
-						bodyJson = JSON.parse(body);
+						bodyJson = parseJsonSafely(body, new Set(['', 'JWT', 'PASSWORD']));
 					} catch (parseError) {
 
 					}
@@ -1741,7 +1762,7 @@ https.createServer(serverOptions, async function (req, res) {
 					let bodyJson = null;
 
 					try {
-						bodyJson = JSON.parse(body);
+						bodyJson = parseJsonSafely(body, new Set(['', 'SERVICE']));
 					} catch (parseError) {
 
 					}
@@ -1766,7 +1787,7 @@ https.createServer(serverOptions, async function (req, res) {
 					let bodyJson = null;
 
 					try {
-						bodyJson = JSON.parse(body);
+						bodyJson = parseJsonSafely(body, new Set(['', 'ENDPOINT']));
 					} catch (parseError) {
 
 					}
@@ -1791,7 +1812,7 @@ https.createServer(serverOptions, async function (req, res) {
 					let bodyJson = null;
 
 					try {
-						bodyJson = JSON.parse(body);
+						bodyJson = parseJsonSafely(body, new Set(['', 'USERNAME', 'PASSWORD']));
 					} catch (parseError) {
 
 					}
@@ -1816,7 +1837,7 @@ https.createServer(serverOptions, async function (req, res) {
 					let bodyJson = null;
 
 					try {
-						bodyJson = JSON.parse(body);
+						bodyJson = parseJsonSafely(body, new Set(['', 'USERNAME', 'PASSWORD']));
 					} catch (parseError) {
 
 					}
