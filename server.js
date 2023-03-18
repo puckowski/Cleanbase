@@ -1323,13 +1323,51 @@ const serverOptions = {
 	cert: fs.readFileSync('certificates/cert.pem')
 };
 
+const internalSegments = new Set([
+	'createservice',
+	'createendpoint',
+	'removeendpoint',
+	'restartendpoint',
+	'updateendpoint',
+	'adduser',
+	'removeuser',
+	'updateuser',
+	'resetuser',
+	'loginuser',
+	'refreshjwt',
+	'refreshsuperuserjwt',
+	'validatejwt',
+	'serviceready',
+	'endpointready',
+	'addsuperuser',
+	'loginsuperuser',
+]);
+Object.freeze(internalSegments);
+
 https.createServer(serverOptions, async function (req, res) {
 	const ipAddr = req.connection.remoteAddress;
 	rateLimiter.addDateForIp(ipAddr);
-
+	
 	if (rateLimiter.isRateExceededForIp(ipAddr)) {
-		res.writeHead(429, { 'Content-Type': 'text/plain' });
-		res.end('limit reached\n');
+		var url_parts = url.parse(req.url);
+		url_parts = url_parts.path;
+		url_parts = url_parts.split('/');
+
+		const firstSegment = url_parts[1];
+
+		if (!internalSegments.has(firstSegment)) {
+			const secondSegment = url_parts[2];
+
+			const truthyIfProxied = await executeEndpoint(firstSegment, secondSegment, req, res);
+
+			if (!truthyIfProxied) {
+				res.writeHead(500, { 'Content-Type': 'text/plain' });
+				res.end('error\n');
+			}
+		} else {
+			res.writeHead(429, { 'Content-Type': 'text/plain' });
+			res.end('limit reached\n');
+		}
 	} else {
 		try {
 			var url_parts = url.parse(req.url);

@@ -224,6 +224,9 @@ POST body:
 }
 Updates user password forcibly. Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Password must be at least 12 characters and less than 33 characters.
 
+## Version 1.9
+
+- Do not rate limit endpoints.
 
 ## Version 1.8
 

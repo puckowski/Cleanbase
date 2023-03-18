@@ -19,6 +19,12 @@ class RateLimiter {
     }
 
     isRateExceededForIp(ipAddr) {
+        if (ipAddr !== null && ipAddr !== undefined
+            && (ipAddr === '127.0.0.1'
+                || ipAddr.startsWith('172.17.0'))) {
+            return false;
+        }
+
         if (this.dateCount > RATE_LIMIT_MAX_DATE_TRACKING) {
             for (let [key, value] of this.ipMap) {
                 value.shift();
