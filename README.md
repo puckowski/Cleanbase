@@ -228,6 +228,12 @@ POST body:
 }
 Updates user password forcibly. Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Password must be at least 12 characters and less than 33 characters.
 
+## Version 2.0
+
+- Update how account passwords are set.
+- Add constant for banned usernames for added security.
+- Sanitize URL paths for added safety.
+
 ## Version 1.9
 
 - Do not rate limit endpoints.
