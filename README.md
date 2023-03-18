@@ -82,7 +82,7 @@ https://localhost/createservice
 POST body:
 {
 	"name": "servicename",
-	"password": "123456"
+	"password": "123456789101112"
 }
 Requires Authorization Bearer header (superuser JWT).
 Service name must be alphanumeric and have a maximum of 32 characters. Service name must be at least 6 characters. Password must be at least 12 characters and less than 33 characters.
@@ -111,7 +111,7 @@ POST body:
 https://localhost/addsuperuser
 POST body:
 {
-	"password": "123456",
+	"password": "123456789101112",
 	"username": "abcdefg"
 }
 
@@ -124,7 +124,7 @@ sudo node activesuperuser.js {SUPERUSER_NAME}
 https://localhost/loginsuperuser
 POST body:
 {
-	"password": "123456",
+	"password": "123456789101112",
 	"username": "abcdefg"
 }
 
@@ -138,13 +138,13 @@ POST body:
 https://localhost/removeendpoint/{SERVICE_NAME}/{ENDPOINT_NAME}
 POST body:
 {
-	"password": "123456"
+	"password": "123456789101112"
 }
 Requires Authorization Bearer header (superuser JWT).
 
 https://localhost/restartendpoint/{SERVICE_NAME}/{ENDPOINT_NAME}
 {
-	"password": "123456"
+	"password": "123456789101112"
 }
 Requires Authorization Bearer header (superuser JWT).
 
@@ -200,7 +200,7 @@ Returns JWT with payload containing:
 https://172.17.0.1:443/removeuser/{SERVICE_NAME}
 POST body:
 {
-	"password": "123456",
+	"password": "123456789101112",
 	"username": "abcdefg"
 }
 Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters.
@@ -208,7 +208,7 @@ Username must be alphanumeric and have a maximum of 32 characters at be at least
 https://172.17.0.1:443/updateuser/{SERVICE_NAME}
 POST body:
 {
-	"password": "123456",
+	"password": "123456789101112",
 	"username": "abcdefg",
 	"userPassword": "123456789101112",
 	"newPassword": "789012"
@@ -218,7 +218,7 @@ Updates user password. Username must be alphanumeric and have a maximum of 32 ch
 https://172.17.0.1:443/resetuser/{SERVICE_NAME}
 POST body:
 {
-	"password": "123456",
+	"password": "123456789101112",
 	"username": "abcdefg",
 	"newPassword": "789012345678910"
 }
