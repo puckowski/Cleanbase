@@ -8,8 +8,9 @@ const jwt = require("jsonwebtoken");
 const httpProxy = require('http-proxy');
 const bcrypt = require("bcrypt");
 const { Worker } = require("worker_threads");
-const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS, ENDPOINT_RESPONSE_MILLISECONDS, JWT_SECRET, MINIMUM_PASSWORD_LENGTH, MAX_JSON_LENGTH } = require('./constants');
+const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS, ENDPOINT_RESPONSE_MILLISECONDS, JWT_SECRET, MINIMUM_PASSWORD_LENGTH, MAX_JSON_LENGTH, BANNED_SERVICE_UPPERCASE_NAMES } = require('./constants');
 const RateLimiter = require('./src/ratelimiter');
+const sanitizeUrl = require("@braintree/sanitize-url").sanitizeUrl;
 
 const rateLimiter = new RateLimiter();
 
@@ -158,7 +159,7 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 		res.end('uploaded\n');
 
 		const endDate = new Date();
-		console.log('Formidable time ellapsed:' + (endDate - startDate));
+		console.log('Formidable time ellapsed: ' + (endDate - startDate));
 
 		// iterate through each file path and extract them
 		filesInfo.forEach(({ filePath, fileName }) => {
@@ -182,7 +183,7 @@ const uploadMedia = async (req, res, isCreatingEndpoint = false) => {
 		});
 	});
 
-	var url_parts = url.parse(req.url);
+	var url_parts = url.parse(sanitizeUrl(req.url));
 	url_parts = url_parts.path;
 	url_parts = url_parts.split('/');
 	const serviceSegment = url_parts[1];
@@ -254,7 +255,7 @@ async function createEndpoint(req, res) {
 		}
 
 		if (rows.length === 0 || maxPort < 3125) {
-			var url_parts = url.parse(req.url);
+			var url_parts = url.parse(sanitizeUrl(req.url));
 			url_parts = url_parts.path;
 			url_parts = url_parts.split('/');
 			const serviceSegment = url_parts[1];
@@ -303,7 +304,7 @@ async function removeEndpoint(req, res, postBody) {
 	try {
 		conn = await pool.getConnection();
 
-		var url_parts = url.parse(req.url);
+		var url_parts = url.parse(sanitizeUrl(req.url));
 		url_parts = url_parts.path;
 		url_parts = url_parts.split('/');
 		const serviceSegment = url_parts[1];
@@ -371,7 +372,7 @@ async function restartEndpoint(req, res, postBody) {
 	try {
 		conn = await pool.getConnection();
 
-		var url_parts = url.parse(req.url);
+		var url_parts = url.parse(sanitizeUrl(req.url));
 		url_parts = url_parts.path;
 		url_parts = url_parts.split('/');
 		const serviceSegment = url_parts[1];
@@ -430,7 +431,7 @@ async function addUser(req, postBody) {
 		return;
 	}
 
-	var url_parts = url.parse(req.url);
+	var url_parts = url.parse(sanitizeUrl(req.url));
 	url_parts = url_parts.path;
 	url_parts = url_parts.split('/');
 	const serviceSegment = url_parts[2];
@@ -514,7 +515,7 @@ async function updateUser(req, postBody) {
 		return;
 	}
 
-	var url_parts = url.parse(req.url);
+	var url_parts = url.parse(sanitizeUrl(req.url));
 	url_parts = url_parts.path;
 	url_parts = url_parts.split('/');
 	const serviceSegment = url_parts[2];
@@ -591,7 +592,7 @@ async function resetUser(req, postBody) {
 		return;
 	}
 
-	var url_parts = url.parse(req.url);
+	var url_parts = url.parse(sanitizeUrl(req.url));
 	url_parts = url_parts.path;
 	url_parts = url_parts.split('/');
 	const serviceSegment = url_parts[2];
@@ -663,7 +664,7 @@ async function removeUser(req, postBody) {
 		return;
 	}
 
-	var url_parts = url.parse(req.url);
+	var url_parts = url.parse(sanitizeUrl(req.url));
 	url_parts = url_parts.path;
 	url_parts = url_parts.split('/');
 	const serviceSegment = url_parts[2];
@@ -812,7 +813,7 @@ async function loginUser(req, postBody) {
 		return;
 	}
 
-	var url_parts = url.parse(req.url);
+	var url_parts = url.parse(sanitizeUrl(req.url));
 	url_parts = url_parts.path;
 	url_parts = url_parts.split('/');
 	const serviceSegment = url_parts[2];
@@ -880,7 +881,7 @@ async function validateJwt(req, postBody) {
 		return;
 	}
 
-	var url_parts = url.parse(req.url);
+	var url_parts = url.parse(sanitizeUrl(req.url));
 	url_parts = url_parts.path;
 	url_parts = url_parts.split('/');
 	const serviceSegment = url_parts[2];
@@ -940,7 +941,7 @@ async function refreshJwt(req, postBody) {
 		return;
 	}
 
-	var url_parts = url.parse(req.url);
+	var url_parts = url.parse(sanitizeUrl(req.url));
 	url_parts = url_parts.path;
 	url_parts = url_parts.split('/');
 	const serviceSegment = url_parts[2];
@@ -1011,7 +1012,7 @@ async function refreshSuperuserJwt(req, postBody) {
 		return;
 	}
 
-	var url_parts = url.parse(req.url);
+	var url_parts = url.parse(sanitizeUrl(req.url));
 	url_parts = url_parts.path;
 	url_parts = url_parts.split('/');
 	const serviceSegment = url_parts[2];
@@ -1347,9 +1348,9 @@ Object.freeze(internalSegments);
 https.createServer(serverOptions, async function (req, res) {
 	const ipAddr = req.connection.remoteAddress;
 	rateLimiter.addDateForIp(ipAddr);
-	
+
 	if (rateLimiter.isRateExceededForIp(ipAddr)) {
-		var url_parts = url.parse(req.url);
+		var url_parts = url.parse(sanitizeUrl(req.url));
 		url_parts = url_parts.path;
 		url_parts = url_parts.split('/');
 
@@ -1370,7 +1371,7 @@ https.createServer(serverOptions, async function (req, res) {
 		}
 	} else {
 		try {
-			var url_parts = url.parse(req.url);
+			var url_parts = url.parse(sanitizeUrl(req.url));
 			url_parts = url_parts.path;
 			url_parts = url_parts.split('/');
 
@@ -1428,7 +1429,12 @@ https.createServer(serverOptions, async function (req, res) {
 						const nameFormatted = nameOriginal.replace(/[^a-z0-9]/gi, '');
 
 						if (nameOriginal.length === nameFormatted.length && nameFormatted.length <= 32 && bodyJson.password.length <= 32) {
-							createService(bodyJson.name, bodyJson.password, payload.user_id);
+							const bannedNames = new Set(BANNED_SERVICE_UPPERCASE_NAMES);
+
+							if (bodyJson.name.toUpperCase() !== 'ROOT'
+								&& !bannedNames.has(bodyJson.name.toUpperCase())) {
+								createService(bodyJson.name, bodyJson.password, payload.user_id);
+							}
 						}
 					}
 				});
@@ -1461,7 +1467,7 @@ https.createServer(serverOptions, async function (req, res) {
 					return;
 				}
 
-				req.url = req.url.replace('createendpoint/', '');
+				req.url = sanitizeUrl(req.url).replace('createendpoint/', '');
 				const port = await createEndpoint(req, res);
 
 				if (port) {
@@ -1512,7 +1518,7 @@ https.createServer(serverOptions, async function (req, res) {
 
 					}
 
-					req.url = req.url.replace('removeendpoint/', '');
+					req.url = sanitizeUrl(req.url).replace('removeendpoint/', '');
 					await removeEndpoint(req, res, bodyJson);
 
 					res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -1560,7 +1566,7 @@ https.createServer(serverOptions, async function (req, res) {
 
 					}
 
-					req.url = req.url.replace('restartendpoint/', '');
+					req.url = sanitizeUrl(req.url).replace('restartendpoint/', '');
 					await restartEndpoint(req, res, bodyJson);
 
 					res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -1595,7 +1601,7 @@ https.createServer(serverOptions, async function (req, res) {
 					return;
 				}
 
-				req.url = req.url.replace('updateendpoint/', '');
+				req.url = sanitizeUrl(req.url).replace('updateendpoint/', '');
 				uploadMedia(req, res);
 
 				res.writeHead(200, { 'Content-Type': 'text/plain' });

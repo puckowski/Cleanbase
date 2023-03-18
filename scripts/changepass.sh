@@ -1,1 +1,1 @@
-echo '$1:$2' | chpasswd
+echo "$1:$2" | chpasswd

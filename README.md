@@ -31,6 +31,10 @@ On an Ubuntu 20.04 host, in a terminal, run the following command:
 ./setupcleanbase.sh
 ```
 
+For added security, add sudoer account names, uppercase, to the following array in ```constants.js```:
+
+```const BANNED_SERVICE_UPPERCASE_NAMES = ['ROOT'];```
+
 ## Running
 
 In a terminal, run the following command:

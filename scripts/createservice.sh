@@ -1,12 +1,7 @@
 useradd -m -p password -s /bin/bash $1
 passwd -d $1
 
-sudo -i -u $1 bash << EOF
-echo "Changing password"
-cd /
-./changepass.sh $1 $2
-echo "Password changed"
-EOF
+sudo /changepass.sh $1 $2
 
 sudo setquota -u $1 200M 220M 0 0 /
 
