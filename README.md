@@ -236,7 +236,6 @@ POST body:
 }
 Updates user password forcibly. Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Password must be at least 12 characters and less than 33 characters.
 
-
 ## Version 2.1
 
 - Add constants for database connection configuration.
