@@ -8,7 +8,7 @@ const jwt = require("jsonwebtoken");
 const httpProxy = require('http-proxy');
 const bcrypt = require("bcrypt");
 const { Worker } = require("worker_threads");
-const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS, ENDPOINT_RESPONSE_MILLISECONDS, JWT_SECRET, MINIMUM_PASSWORD_LENGTH, MAX_JSON_LENGTH, BANNED_SERVICE_UPPERCASE_NAMES, DATABASE_HOST, DATABASE_USER, DATABASE_CONNECTION_LIMIT } = require('./constants');
+const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS, ENDPOINT_RESPONSE_MILLISECONDS, JWT_SECRET, MINIMUM_PASSWORD_LENGTH, MAX_JSON_LENGTH, BANNED_SERVICE_UPPERCASE_NAMES, DATABASE_HOST, DATABASE_USER, DATABASE_CONNECTION_LIMIT, PASSWORD_MINIMUM_TIMEOUT_MILLISECONDS } = require('./constants');
 const RateLimiter = require('./src/ratelimiter');
 const sanitizeUrl = require("@braintree/sanitize-url").sanitizeUrl;
 
@@ -788,7 +788,17 @@ async function loginSuperuser(req, postBody) {
 			const usernameFormatted = username.replace(/[^a-z0-9]/gi, '');
 
 			if ((active === 1 || active === true) && usernameFormatted === username && username.length >= 6 && username.length <= 32 && userPass.length >= minimumPasswordLength && userPass.length <= 32) {
-				const validPassword = await bcrypt.compare(userPass, password);
+				const timingPromise = new Promise((resolve) => {
+					setTimeout(() => {
+						resolve(true);
+					}, PASSWORD_MINIMUM_TIMEOUT_MILLISECONDS);
+				});
+
+				const [validPassword, delayResult] = await Promise.all([
+					bcrypt.compare(userPass, password),
+					timingPromise
+				]);
+
 				if (validPassword) {
 					const newToken = jwt.sign({ name, user_id: id }, jwtKey, {
 						algorithm: "HS384",
@@ -856,7 +866,17 @@ async function loginUser(req, postBody) {
 			]);
 
 			if (existingRows.length > 0 && existingRows[0].user_password && existingRows[0].id && existingRows[0].id > 0) {
-				const validPassword = await bcrypt.compare(userPass, existingRows[0].user_password);
+				const timingPromise = new Promise((resolve) => {
+					setTimeout(() => {
+						resolve(true);
+					}, PASSWORD_MINIMUM_TIMEOUT_MILLISECONDS);
+				});
+
+				const [validPassword, delayResult] = await Promise.all([
+					bcrypt.compare(userPass, existingRows[0].user_password),
+					delayPromise
+				]);
+
 				if (validPassword) {
 					const newToken = jwt.sign({ username, user_id: existingRows[0].id, service_id: id, user_level: existingRows[0].user_level }, jwtKey, {
 						algorithm: "HS384",
