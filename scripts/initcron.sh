@@ -4,7 +4,7 @@ MY_PATH=$(pwd)
 
 echo "$MY_PATH"
 
-cronjob4="@reboot cd $MY_PATH && $MY_PATH/scripts/rebuildall.sh"
+cronjob4="@reboot cd $MY_PATH/scripts && $MY_PATH/scripts/rebuildall.sh > /tmp/cleanbasestartup.txt 2>&1"
 { crontab -l -u root 2>/dev/null; echo "$cronjob4"; } | crontab -u root -
 
 cronjob1="0,5,10,15,20,25,30,35,40,45,50,55  * * * * cd $MY_PATH && $MY_PATH/scripts/standalonerunstopped.sh"
