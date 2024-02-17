@@ -312,3 +312,11 @@ Updates user password forcibly. Username must be alphanumeric and have a maximum
 - Add https://172.17.0.1:443/updateuser/{SERVICE_NAME}
 - Add https://172.17.0.1:443/resetuser/{SERVICE_NAME}
 - Add filesystem quotas per user.
+
+## Dependecy version support
+
+- Node 16.19.1
+- npm 8.19.3
+- MariaDB 10.3.38
+- quota 4.05
+- Docker 23.0.1
