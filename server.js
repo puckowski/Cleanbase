@@ -8,7 +8,7 @@ const jwt = require("jsonwebtoken");
 const httpProxy = require('http-proxy');
 const bcrypt = require("bcrypt");
 const { Worker } = require("worker_threads");
-const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS, ENDPOINT_RESPONSE_MILLISECONDS, JWT_SECRET, MINIMUM_PASSWORD_LENGTH, MAX_JSON_LENGTH, BANNED_SERVICE_UPPERCASE_NAMES, DATABASE_HOST, DATABASE_USER, DATABASE_CONNECTION_LIMIT, PASSWORD_MINIMUM_TIMEOUT_MILLISECONDS } = require('./constants');
+const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS, ENDPOINT_RESPONSE_MILLISECONDS, JWT_SECRET, MINIMUM_PASSWORD_LENGTH, MAX_JSON_LENGTH, BANNED_SERVICE_UPPERCASE_NAMES, DATABASE_HOST, DATABASE_USER, DATABASE_CONNECTION_LIMIT, PASSWORD_MINIMUM_TIMEOUT_MILLISECONDS, MAX_ENDPOINT_COUNT } = require('./constants');
 const RateLimiter = require('./src/ratelimiter');
 const sanitizeUrl = require("@braintree/sanitize-url").sanitizeUrl;
 
@@ -243,6 +243,20 @@ async function createEndpoint(req, res) {
 	let conn;
 	try {
 		conn = await pool.getConnection();
+
+		const countRows = await conn.query("SELECT COUNT(*) AS count from tbl_endpoint");
+
+		let endpointCount;
+
+		if (countRows.length > 0) {
+			endpointCount = countRows[0].count;
+		} else {
+			endpointCount = 0;
+		}
+
+		if (endpointCount >= MAX_ENDPOINT_COUNT) {
+			return null;
+		}
 
 		const rows = await conn.query("SELECT service_port from tbl_endpoint ORDER BY service_port DESC");
 
