@@ -8,7 +8,7 @@ const jwt = require("jsonwebtoken");
 const httpProxy = require('http-proxy');
 const bcrypt = require("bcrypt");
 const { Worker } = require("worker_threads");
-const { DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS, ENDPOINT_RESPONSE_MILLISECONDS, JWT_SECRET, MINIMUM_PASSWORD_LENGTH, MAX_JSON_LENGTH, BANNED_SERVICE_UPPERCASE_NAMES, DATABASE_HOST, DATABASE_USER, DATABASE_CONNECTION_LIMIT, PASSWORD_MINIMUM_TIMEOUT_MILLISECONDS, MAX_ENDPOINT_COUNT } = require('./constants');
+const { MAX_REQUEST_SIZE, DATABASE_PASSWORD, ENDPOINT_ZIP_MAX_MEGABYTES, JWT_EXPIRY_SECONDS, ENDPOINT_RESPONSE_MILLISECONDS, JWT_SECRET, MINIMUM_PASSWORD_LENGTH, MAX_JSON_LENGTH, BANNED_SERVICE_UPPERCASE_NAMES, DATABASE_HOST, DATABASE_USER, DATABASE_CONNECTION_LIMIT, PASSWORD_MINIMUM_TIMEOUT_MILLISECONDS, MAX_ENDPOINT_COUNT } = require('./constants');
 const RateLimiter = require('./src/ratelimiter');
 const sanitizeUrl = require("@braintree/sanitize-url").sanitizeUrl;
 
@@ -18,7 +18,7 @@ const proxy = httpProxy.createProxy({ secure: false, proxyTimeout: ENDPOINT_RESP
 
 proxy.on('error', (err, req, res) => {
 	res.writeHead(408, { 'Content-Type': 'text/plain' });
-	res.end('Timeout\n');
+	res.end('Could not respond\n');
 });
 
 const jwtKey = JWT_SECRET;
@@ -1444,6 +1444,12 @@ https.createServer(serverOptions, async function (req, res) {
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
+
+					if (body.length > MAX_REQUEST_SIZE) {
+						res.writeHead(413, { 'Content-Type': 'text/plain' });
+						res.end('Request Entity Too Large');
+						req.destroy();
+					}
 				});
 
 				req.on('end', () => {
@@ -1542,6 +1548,12 @@ https.createServer(serverOptions, async function (req, res) {
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
+
+					if (body.length > MAX_REQUEST_SIZE) {
+						res.writeHead(413, { 'Content-Type': 'text/plain' });
+						res.end('Request Entity Too Large');
+						req.destroy();
+					}
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
@@ -1590,6 +1602,12 @@ https.createServer(serverOptions, async function (req, res) {
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
+
+					if (body.length > MAX_REQUEST_SIZE) {
+						res.writeHead(413, { 'Content-Type': 'text/plain' });
+						res.end('Request Entity Too Large');
+						req.destroy();
+					}
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
@@ -1645,6 +1663,12 @@ https.createServer(serverOptions, async function (req, res) {
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
+
+					if (body.length > MAX_REQUEST_SIZE) {
+						res.writeHead(413, { 'Content-Type': 'text/plain' });
+						res.end('Request Entity Too Large');
+						req.destroy();
+					}
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
@@ -1670,6 +1694,12 @@ https.createServer(serverOptions, async function (req, res) {
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
+
+					if (body.length > MAX_REQUEST_SIZE) {
+						res.writeHead(413, { 'Content-Type': 'text/plain' });
+						res.end('Request Entity Too Large');
+						req.destroy();
+					}
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
@@ -1690,6 +1720,12 @@ https.createServer(serverOptions, async function (req, res) {
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
+
+					if (body.length > MAX_REQUEST_SIZE) {
+						res.writeHead(413, { 'Content-Type': 'text/plain' });
+						res.end('Request Entity Too Large');
+						req.destroy();
+					}
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
@@ -1715,6 +1751,12 @@ https.createServer(serverOptions, async function (req, res) {
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
+
+					if (body.length > MAX_REQUEST_SIZE) {
+						res.writeHead(413, { 'Content-Type': 'text/plain' });
+						res.end('Request Entity Too Large');
+						req.destroy();
+					}
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
@@ -1740,6 +1782,12 @@ https.createServer(serverOptions, async function (req, res) {
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
+
+					if (body.length > MAX_REQUEST_SIZE) {
+						res.writeHead(413, { 'Content-Type': 'text/plain' });
+						res.end('Request Entity Too Large');
+						req.destroy();
+					}
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
@@ -1760,6 +1808,12 @@ https.createServer(serverOptions, async function (req, res) {
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
+
+					if (body.length > MAX_REQUEST_SIZE) {
+						res.writeHead(413, { 'Content-Type': 'text/plain' });
+						res.end('Request Entity Too Large');
+						req.destroy();
+					}
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
@@ -1785,6 +1839,12 @@ https.createServer(serverOptions, async function (req, res) {
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
+
+					if (body.length > MAX_REQUEST_SIZE) {
+						res.writeHead(413, { 'Content-Type': 'text/plain' });
+						res.end('Request Entity Too Large');
+						req.destroy();
+					}
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
@@ -1810,6 +1870,12 @@ https.createServer(serverOptions, async function (req, res) {
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
+
+					if (body.length > MAX_REQUEST_SIZE) {
+						res.writeHead(413, { 'Content-Type': 'text/plain' });
+						res.end('Request Entity Too Large');
+						req.destroy();
+					}
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
@@ -1835,6 +1901,12 @@ https.createServer(serverOptions, async function (req, res) {
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
+
+					if (body.length > MAX_REQUEST_SIZE) {
+						res.writeHead(413, { 'Content-Type': 'text/plain' });
+						res.end('Request Entity Too Large');
+						req.destroy();
+					}
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
@@ -1860,6 +1932,12 @@ https.createServer(serverOptions, async function (req, res) {
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
+
+					if (body.length > MAX_REQUEST_SIZE) {
+						res.writeHead(413, { 'Content-Type': 'text/plain' });
+						res.end('Request Entity Too Large');
+						req.destroy();
+					}
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
@@ -1885,6 +1963,12 @@ https.createServer(serverOptions, async function (req, res) {
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
+
+					if (body.length > MAX_REQUEST_SIZE) {
+						res.writeHead(413, { 'Content-Type': 'text/plain' });
+						res.end('Request Entity Too Large');
+						req.destroy();
+					}
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
@@ -1910,6 +1994,12 @@ https.createServer(serverOptions, async function (req, res) {
 				let body = '';
 				req.on('data', chunk => {
 					body += chunk.toString();
+
+					if (body.length > MAX_REQUEST_SIZE) {
+						res.writeHead(413, { 'Content-Type': 'text/plain' });
+						res.end('Request Entity Too Large');
+						req.destroy();
+					}
 				});
 				req.on('end', async () => {
 					let bodyJson = null;
