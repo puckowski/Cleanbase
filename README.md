@@ -236,6 +236,10 @@ POST body:
 }
 Updates user password forcibly. Username must be alphanumeric and have a maximum of 32 characters at be at least 6 characters. Password must be at least 12 characters and less than 33 characters.
 
+## Version 2.3
+
+- Requests are limited to 2 megabytes in size by default.
+  
 ## Version 2.2
 
 - Add additional guard for timing attacks which is configurable in constants.js.
